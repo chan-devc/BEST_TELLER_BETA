@@ -797,6 +797,7 @@ export default function PublicRankTellerPage() {
 
           {/* ── Right: trophy ── */}
           <div className="hero-trophy-panel" style={{ animation: 'fadeUp .5s .12s ease both', display:'flex', flexDirection:'column', gap: 14, alignItems:'center' }} aria-hidden="true">
+            <img src="/trophy.png" alt="Best Teller Trophy" style={{ width: 160, height: 160, objectFit: 'contain', display: 'block', animation: 'float 2.8s ease-in-out infinite', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,.35))' }} />
             {rows[0] && Number(rows[0].total_score) >= 100 && (
               <div style={{
                 borderRadius: 18, padding: '14px 20px', textAlign:'center', width:'100%',
