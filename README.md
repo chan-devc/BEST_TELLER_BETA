@@ -107,11 +107,36 @@ npm run dev
 # http://localhost:3000
 ```
 
-### Production
+### Production (local)
 
 ```bash
 npm run build
 npm run start
+```
+
+### Production (Docker)
+
+```bash
+# Build image
+docker compose build
+
+# Start (port 3031)
+docker compose up -d
+
+# Stop
+docker compose down
+```
+
+> ໄຟລ໌ໃນ `./file/` ຖືກ mount ເຂົ້າ container ໂດຍອັດຕະໂນມັດ.  
+> ເພີ່ມ XLSX ໃໝ່ໃນ `file/` ໄດ້ທັນທີ ໂດຍບໍ່ຕ້ອງ rebuild image.
+
+### ການອັບເດດຂໍ້ມູນ XLSX ໃໝ່ (ບໍ່ຕ້ອງ rebuild)
+
+```bash
+# ວາງໄຟລ໌ໃໝ່ໃນ file/
+copy 05.2026v1.xlsx file\
+
+# ຣີສະຕາດ container ຫຼື ສົ່ງ request ໃໝ່ — ອ່ານທັນທີ (force-dynamic)
 ```
 
 ---

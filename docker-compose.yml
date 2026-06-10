@@ -4,9 +4,13 @@ services:
     ports:
       - "3031:3000"
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET}
       - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME}
+    volumes:
+      # Mount data directory so XLSX files and finger_codes.json
+      # can be updated without rebuilding the image
+      - ./file:/app/file
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
