@@ -1,0 +1,514 @@
+// ═══════════════════════════════════════════════════════
+//  BCEL Best Teller Award 2026 — Full Database Schema
+//  Paste into https://dbdiagram.io to render the diagram
+// ═══════════════════════════════════════════════════════
+
+// ────────────────────────────────────────────────────────
+//  GROUP 1: CORE TABLES  (migrate.sql)
+// ────────────────────────────────────────────────────────
+
+Table admin_users [note: 'Admin accounts — superadmin & editor roles'] {
+  id            int          [pk, increment]
+  username      varchar(50)  [not null, unique]
+  password_hash varchar(255) [not null]
+  display_name  varchar(100) [not null]
+  role          varchar(20)  [not null, default: 'editor', note: 'superadmin | editor']
+  color         varchar(20)  [not null, default: '#C8001E']
+  is_active     boolean      [not null, default: true]
+  created_at    timestamptz  [not null, default: `now()`]
+  updated_at    timestamptz  [not null, default: `now()`]
+}
+
+Table categories [note: 'Sheet/category definitions — one per ranking sheet'] {
+  id         int          [pk, increment]
+  sheet_key  varchar(50)  [not null, unique]
+  cat        varchar(20)  [not null]
+  type       varchar(30)  [not null]
+  label      varchar(150) [not null]
+  emoji      varchar(10)  [not null, default: '📊']
+  sort_order int          [not null, default: 0]
+  is_public  boolean      [not null, default: true]
+  created_at timestamptz  [not null, default: `now()`]
+}
+
+Table tellers [note: 'Snapshot ranking rows — one per teller per category'] {
+  id               int          [pk, increment]
+  user_code        varchar(20)  [not null]
+  name             varchar(150) [not null]
+  position         varchar(100)
+  unit             varchar(200)
+  branch           varchar(200)
+  score            numeric(6,2) [not null, default: 0]
+  rank_in_category int          [not null, default: 0]
+  category_id      int          [not null]
+  is_active        boolean      [not null, default: true]
+  created_at       timestamptz  [not null, default: `now()`]
+  updated_at       timestamptz  [not null, default: `now()`]
+
+  indexes {
+    (user_code, category_id) [unique]
+    category_id
+    score
+    user_code
+  }
+}
+
+Table announcements [note: 'News/announcements shown on public or admin site'] {
+  id          int          [pk, increment]
+  title_lo    varchar(300) [not null]
+  title_en    varchar(300)
+  body        text
+  status      varchar(20)  [not null, default: 'draft', note: 'live | draft | scheduled']
+  tag         varchar(20)  [not null, default: 'new',   note: 'new | perf | event | q1']
+  role_target varchar(20)  [not null, default: 'all',   note: 'all | admin']
+  created_by  int
+  created_at  timestamptz  [not null, default: `now()`]
+  updated_at  timestamptz  [not null, default: `now()`]
+}
+
+Table upload_history [note: 'Audit log of every Excel upload'] {
+  id            int          [pk, increment]
+  filename      varchar(255) [not null]
+  records_count int          [not null, default: 0]
+  status        varchar(20)  [not null, default: 'success', note: 'success | error']
+  error_message text
+  sheet_results jsonb        [note: 'Per-sheet row counts & errors']
+  uploaded_by   int
+  created_at    timestamptz  [not null, default: `now()`]
+}
+
+Table app_settings [note: 'Key-value global settings'] {
+  key        varchar(100) [pk]
+  value      text         [not null]
+  updated_at timestamptz  [not null, default: `now()`]
+}
+
+// ────────────────────────────────────────────────────────
+//  GROUP 2: SOURCE TABLES  (migrate_data_source.sql)
+//  Populated by Excel upload — TRUNCATE + INSERT each cycle
+// ────────────────────────────────────────────────────────
+
+Table source_saft_teller [note: 'Employee master list from SAFT system'] {
+  id             int          [pk, increment]
+  no             int
+  finger_code    varchar(20)  [note: 'Biometric fingerprint ID']
+  user_code      varchar(20)  [note: 'Primary teller identifier (BCELXXXXX)']
+  fullname       varchar(200)
+  position       varchar(150)
+  level          varchar(30)
+  responsibility varchar(100)
+  sector         varchar(200)
+  department     varchar(200) [note: 'Branch/department name in Lao']
+  description    text
+  branch_code    varchar(50)  [note: 'GENERATED: HV for 5 HV depts, else = department']
+  is_active      boolean      [not null, default: true]
+  created_at     timestamptz  [not null, default: `now()`]
+  updated_at     timestamptz  [not null, default: `now()`]
+
+  indexes {
+    user_code
+    finger_code
+    is_active
+  }
+}
+
+Table source_txn [note: 'Transaction counts per teller — one row per teller per cycle'] {
+  id              int           [pk, increment]
+  no              int
+  user_id         varchar(50)   [note: 'Matches source_saft_teller.user_code']
+  user_name       varchar(200)
+  dys             int           [default: 0, note: 'Days of work']
+  c_cash          numeric(20,2) [default: 0]
+  cup             int           [default: 0]
+  cup_virtual     int           [default: 0]
+  inter_card      int           [default: 0]
+  paycard         int           [default: 0]
+  b1              int           [default: 0]
+  b1_b1_dup       int           [default: 0, note: 'B1 after deducting duplicates']
+  ibank           int           [default: 0]
+  sms             int           [default: 0]
+  onepay          int           [default: 0]
+  onepay_replace  int           [default: 0]
+  edc             int           [default: 0]
+  ac_opn          int           [default: 0]
+  ac_cls          int           [default: 0]
+  cash_dps        int           [default: 0]
+  cash_out        int           [default: 0]
+  trf             int           [default: 0]
+  smvat           int           [default: 0]
+  p2p             int           [default: 0]
+  domes_trf       int           [default: 0]
+  inter_trf       int           [default: 0]
+  sal             int           [default: 0]
+  cheque          numeric(10,2) [default: 0]
+  exch            int           [default: 0]
+  loan            int           [default: 0]
+  c1_mg           int           [default: 0]
+  cassic_mg       int           [default: 0]
+  b1_mg           int           [default: 0]
+  ib_mg           int           [default: 0]
+  extra_score     int           [default: 0]
+  oth             int           [default: 0]
+  total           numeric(20,2) [default: 0, note: 'Total transaction count']
+  is_active       boolean       [not null, default: true]
+  created_at      timestamptz   [not null, default: `now()`]
+  updated_at      timestamptz   [not null, default: `now()`]
+
+  indexes {
+    user_id
+    is_active
+  }
+}
+
+Table source_teller_reverse [note: 'Reverse transaction counts per teller'] {
+  id             int         [pk, increment]
+  user_code      varchar(20) [note: 'Matches source_saft_teller.user_code']
+  reverse_counts int         [default: 0]
+  is_active      boolean     [not null, default: true]
+  created_at     timestamptz [not null, default: `now()`]
+  updated_at     timestamptz [not null, default: `now()`]
+
+  indexes {
+    user_code
+    is_active
+  }
+}
+
+Table source_teller_recor [note: 'Re-correction (ReCor) counts per teller'] {
+  id          int         [pk, increment]
+  user_code   varchar(20) [note: 'Matches source_saft_teller.user_code']
+  recor_count int         [default: 0]
+  is_active   boolean     [not null, default: true]
+  created_at  timestamptz [not null, default: `now()`]
+  updated_at  timestamptz [not null, default: `now()`]
+
+  indexes {
+    user_code
+    is_active
+  }
+}
+
+Table attendent [note: 'Late attendance records per teller'] {
+  id             int          [pk, increment]
+  finger_code    varchar(20)  [note: 'Matches source_saft_teller.finger_code']
+  user_code      varchar(20)  [note: 'Matches source_saft_teller.user_code']
+  fullname       varchar(200)
+  check_in_time  int          [default: 0]
+  check_out_time int          [default: 0]
+  total          int          [default: 0, note: 'Late check-in count']
+  is_active      boolean      [not null, default: true]
+  created_at     timestamptz  [not null, default: `now()`]
+  updated_at     timestamptz  [not null, default: `now()`]
+
+  indexes {
+    user_code
+    finger_code
+    is_active
+  }
+}
+
+Table source_bcelone_approved_duplica [note: 'B1 duplicate-approved records'] {
+  id                 int         [pk, increment]
+  old_unit           varchar(20)
+  branch_unit_la     varchar(200)
+  user_code          varchar(20) [note: 'Matches source_saft_teller.user_code']
+  total_approved     int         [default: 0]
+  duplicate_approved varchar(50)
+  is_active          boolean     [not null, default: true]
+  created_at         timestamptz [not null, default: `now()`]
+  updated_at         timestamptz [not null, default: `now()`]
+
+  indexes {
+    user_code
+  }
+}
+
+Table source_position [note: 'Position/job-title master — from Position sheet'] {
+  id              int          [pk, increment]
+  no              int
+  position_name   varchar(200) [note: 'e.g. ພະນັກງານວິຊາການ']
+  level           varchar(50)  [note: 'e.g. ຕີ']
+  responsibility  varchar(200) [note: 'e.g. Bank teller']
+  is_active       boolean      [not null, default: true]
+  created_at      timestamptz  [not null, default: `now()`]
+  updated_at      timestamptz  [not null, default: `now()`]
+}
+
+Table source_sector [note: 'Sector master with department code — from source_sector sheet'] {
+  id              int          [pk, increment]
+  no              int
+  sector_name     varchar(200) [note: 'Lao sector name']
+  department_code int          [note: 'FK → department.no']
+  is_active       boolean      [not null, default: true]
+  created_at      timestamptz  [not null, default: `now()`]
+  updated_at      timestamptz  [not null, default: `now()`]
+
+  indexes {
+    department_code
+  }
+}
+
+Table source_group_rank [note: 'Rank group definitions — from source_group_rank sheet'] {
+  id          int          [pk, increment]
+  no          int
+  group_name  varchar(200) [note: 'e.g. Rank All Teller, Rank HV']
+  is_active   boolean      [not null, default: true]
+  created_at  timestamptz  [not null, default: `now()`]
+  updated_at  timestamptz  [not null, default: `now()`]
+}
+
+Table join_grouprank_department [note: 'Many-to-many: rank group ↔ department — from join_grouprank_department sheet'] {
+  id             int         [pk, increment]
+  group_id       int         [note: 'FK → source_group_rank.no']
+  department_id  int         [note: 'FK → department.no']
+  is_active      boolean     [not null, default: true]
+  created_at     timestamptz [not null, default: `now()`]
+  updated_at     timestamptz [not null, default: `now()`]
+
+  indexes {
+    group_id
+    department_id
+    (group_id, department_id)
+  }
+}
+
+Table department [note: 'Department master list — from department sheet'] {
+  id         int          [pk, increment]
+  no         int          [note: 'Department code — referenced by source_sector and join_grouprank_department']
+  dept_name  varchar(200) [note: 'Lao department name, e.g. ສູນບໍລິການ']
+  is_active  boolean      [not null, default: true]
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+}
+
+// ────────────────────────────────────────────────────────
+//  GROUP 3: MASTER / CONFIG TABLES
+// ────────────────────────────────────────────────────────
+
+Table score_point [note: 'Score weight per product type — drives teller_score calculation'] {
+  id         int          [pk, increment]
+  no         int
+  prod_name  varchar(50)  [note: 'e.g. CUP, B1, IBANK, SMS …']
+  score      numeric(8,4) [default: 0]
+  is_active  boolean      [not null, default: true]
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+}
+
+Table mst_weighted_score [note: 'Category-level weights — "transaction" weight used in pro_score'] {
+  id         int          [pk, increment]
+  no         int
+  name       varchar(50)  [note: 'e.g. transaction, discipline, service']
+  score      numeric(8,2) [default: 0]
+  is_active  boolean      [not null, default: true]
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+}
+
+Table mst_special_score [note: 'Bonus score definitions'] {
+  id         int          [pk, increment]
+  no         int
+  name       varchar(200)
+  score      numeric(8,2) [default: 0]
+  is_active  boolean      [not null, default: true]
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+}
+
+Table discipline_percented [note: 'Reverse/ReCor ratio thresholds → penalty score bands'] {
+  id         int          [pk, increment]
+  no         int
+  percented  numeric(8,4) [default: 0, note: 'rev_rate_ratio or cor_rate_ratio threshold']
+  score      numeric(8,2) [default: 0, note: 'Penalty score for that band']
+  is_active  boolean      [not null, default: true]
+  created_at timestamptz  [not null, default: `now()`]
+  updated_at timestamptz  [not null, default: `now()`]
+}
+
+// ────────────────────────────────────────────────────────
+//  GROUP 4: COMPUTED OUTPUT TABLES
+// ────────────────────────────────────────────────────────
+
+Table teller_score [note: 'Per (user × product) score breakdown — computed from source tables'] {
+  id         int           [pk, increment]
+  user_id    varchar(50)   [note: 'From source_txn.user_id']
+  user_name  varchar(200)
+  prod_name  varchar(50)   [note: 'Matches score_point.prod_name']
+  cnt        numeric(20,4) [default: 0, note: 'Transaction count for this product']
+  score      numeric(8,4)  [default: 0, note: 'From score_point.score']
+  points     numeric(20,4) [default: 0, note: 'cnt × score']
+  is_active  boolean       [not null, default: true]
+  created_at timestamptz   [not null, default: `now()`]
+
+  indexes {
+    user_id
+    prod_name
+    points
+    is_active
+  }
+}
+
+Table rank_teller [note: 'Final computed ranking — snapshot of view_rank_tellers result'] {
+  id                 int           [pk, increment]
+  no                 int           [note: 'Rank position']
+  user_id            varchar(50)   [note: 'From source_txn / source_saft_teller']
+  fullname           varchar(200)
+  day_of_work        int           [default: 0]
+  txn_count          numeric(20,2) [default: 0]
+  reverse_score      numeric(8,2)  [default: 0, note: 'From discipline_percented via rev_rate_ratio']
+  recor_score        numeric(8,2)  [default: 0, note: 'From discipline_percented via cor_rate_ratio']
+  attendent_count    int           [default: 0, note: 'From attendent.total']
+  txn_score          numeric(14,4) [default: 0, note: 'SUM(cnt × score_point.score)']
+  discipline_score   numeric(8,2)  [default: 0, note: 'Based on attendent_count bands']
+  txn_over_avg_score numeric(8,2)  [default: 0, note: '+5 if txn_score ≥ 2× branch avg']
+  rev_bonus          numeric(8,2)  [default: 0, note: '+2.5 if zero reverses']
+  recor_bonus        numeric(8,2)  [default: 0, note: '+2.5 if zero recors']
+  attendent_score    numeric(8,2)  [default: 0, note: '+5 if no late check-ins']
+  total_score        numeric(14,4) [default: 0]
+  is_active          boolean       [not null, default: true]
+  created_at         timestamptz   [not null, default: `now()`]
+
+  indexes {
+    user_id
+    no
+    total_score
+    is_active
+  }
+}
+
+Table dept_view_map [note: 'Maps Lao department name → English slug → SQL view name'] {
+  dept_no      int          [pk]
+  department   varchar(200) [not null, note: 'Lao department name from source_saft_teller']
+  view_name    varchar(100) [not null, note: 'e.g. view_rank_savannakhet']
+  eng_name     varchar(100) [note: 'English slug, e.g. savannakhet']
+  rr_view_name varchar(100) [note: 'e.g. view_rrscr_savannakhet']
+  created_at   timestamptz  [not null, default: `now()`]
+
+  indexes {
+    department
+    rr_view_name
+  }
+}
+
+// ────────────────────────────────────────────────────────
+//  TABLE GROUPS  (visual layout in dbdiagram.io)
+// ────────────────────────────────────────────────────────
+
+TableGroup "Core" {
+  admin_users
+  categories
+  tellers
+  announcements
+  upload_history
+  app_settings
+}
+
+TableGroup "Source (uploaded)" {
+  source_saft_teller
+  source_txn
+  source_teller_reverse
+  source_teller_recor
+  attendent
+  source_bcelone_approved_duplica
+  source_position
+  source_sector
+  source_group_rank
+  join_grouprank_department
+  department
+}
+
+TableGroup "Master / Config" {
+  score_point
+  mst_weighted_score
+  mst_special_score
+  discipline_percented
+}
+
+TableGroup "Computed Output" {
+  teller_score
+  rank_teller
+  dept_view_map
+}
+
+// ────────────────────────────────────────────────────────
+//  RELATIONSHIPS
+// ────────────────────────────────────────────────────────
+
+// ── Hard FK constraints ──────────────────────────────────
+
+// tellers belongs to a category (ON DELETE CASCADE)
+Ref: tellers.category_id > categories.id
+
+// announcements created by an admin (ON DELETE SET NULL)
+Ref: announcements.created_by > admin_users.id
+
+// upload_history uploaded by an admin (ON DELETE SET NULL)
+Ref: upload_history.uploaded_by > admin_users.id
+
+// ── Source table → Employee master ──────────────────────
+// All source tables join to source_saft_teller on user_code
+
+// Transaction data — one row per teller per upload cycle
+Ref: source_txn.user_id > source_saft_teller.user_code
+
+// Reverse transactions per teller
+Ref: source_teller_reverse.user_code > source_saft_teller.user_code
+
+// Re-corrections per teller
+Ref: source_teller_recor.user_code > source_saft_teller.user_code
+
+// Attendance — can join on either user_code or finger_code
+Ref: attendent.user_code > source_saft_teller.user_code
+Ref: attendent.finger_code > source_saft_teller.finger_code
+
+// B1 duplicate approvals
+Ref: source_bcelone_approved_duplica.user_code > source_saft_teller.user_code
+
+// ── teller_score inputs ──────────────────────────────────
+// teller_score = source_txn counts × score_point weights
+// filtered through source_saft_teller (INNER JOIN, active only)
+
+Ref: teller_score.user_id > source_txn.user_id
+Ref: teller_score.user_id > source_saft_teller.user_code
+Ref: teller_score.prod_name > score_point.prod_name
+
+// ── rank_teller inputs ───────────────────────────────────
+// rank_teller is the snapshot of view_rank_tellers which joins all source tables
+
+Ref: rank_teller.user_id > source_txn.user_id
+Ref: rank_teller.user_id > source_saft_teller.user_code
+
+// txn_score component: product counts × score_point
+Ref: rank_teller.txn_score > score_point.id
+
+// pro_score component: txn_score scaled by mst_weighted_score "transaction" row
+Ref: rank_teller.txn_score > mst_weighted_score.id
+
+// reverse_score + recor_score: from discipline_percented threshold lookup
+Ref: rank_teller.reverse_score > discipline_percented.id
+Ref: rank_teller.recor_score   > discipline_percented.id
+
+// attendent_count source
+Ref: rank_teller.attendent_count > attendent.id
+
+// ── dept_view_map ────────────────────────────────────────
+// dept_view_map enumerates distinct departments from source_saft_teller
+Ref: dept_view_map.department > source_saft_teller.department
+
+// ── New reference tables ─────────────────────────────────
+
+// source_sector: each sector belongs to one department
+Ref: source_sector.department_code > department.no
+
+// join_grouprank_department: group ↔ department many-to-many bridge
+Ref: join_grouprank_department.group_id       > source_group_rank.no
+Ref: join_grouprank_department.department_id  > department.no
+
+// source_position: text join to employee master (logical, no hard FK)
+Ref: source_saft_teller.position > source_position.position_name
+
+// source_sector: text join to employee master (logical, no hard FK)
+Ref: source_saft_teller.sector > source_sector.sector_name
+
+// department: text join to dept_view_map (logical, no hard FK)
+Ref: dept_view_map.department > department.dept_name

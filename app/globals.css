@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Vidaloka&display=swap');
+
+/* Noto Sans Lao — Lao script only (U+0E80-U+0EFF), so Latin/numbers fall back to Times New Roman */
+@font-face {
+  font-family: 'Noto Sans Lao';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/notosanslao/v33/bx6lNx2Ol_ixgdYWLm9BwxM3NW6BOkuf763Clj73CiQ_J1Djx9pidOt4L8bdfw.ttf) format('truetype');
+  unicode-range: U+0E80-U+0EFF;
+}
+@font-face {
+  font-family: 'Noto Sans Lao';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/notosanslao/v33/bx6lNx2Ol_ixgdYWLm9BwxM3NW6BOkuf763Clj73CiQ_J1Djx9pidOt4ccbdfw.ttf) format('truetype');
+  unicode-range: U+0E80-U+0EFF;
+}
+@font-face {
+  font-family: 'Noto Sans Lao';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/notosanslao/v33/bx6lNx2Ol_ixgdYWLm9BwxM3NW6BOkuf763Clj73CiQ_J1Djx9pidOt4Q8bdfw.ttf) format('truetype');
+  unicode-range: U+0E80-U+0EFF;
+}
+@font-face {
+  font-family: 'Noto Sans Lao';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/notosanslao/v33/bx6lNx2Ol_ixgdYWLm9BwxM3NW6BOkuf763Clj73CiQ_J1Djx9pidOt4r8Hdfw.ttf) format('truetype');
+  unicode-range: U+0E80-U+0EFF;
+}
+@font-face {
+  font-family: 'Noto Sans Lao';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/notosanslao/v33/bx6lNx2Ol_ixgdYWLm9BwxM3NW6BOkuf763Clj73CiQ_J1Djx9pidOt4lsHdfw.ttf) format('truetype');
+  unicode-range: U+0E80-U+0EFF;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #F2F4F7;
+  --bg2: #FFFFFF;
+  --bg3: #F8F9FB;
+  --bg4: #EEF0F5;
+  --border: #E2E6EE;
+  --border2: #CDD2DE;
+  --red: #b71113;
+  --red2: #8a0c0d;
+  --gold: #C99A00;
+  --gold2: #A07800;
+  --green: #0B9E5E;
+  --text: #1A1A2E;
+  --tmid: #5A6480;
+  --tlt: #9AA3BA;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'Noto Sans Lao', 'Vidaloka', 'Times New Roman', serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+/* Vidaloka for all Latin/numbers site-wide */
+:lang(lo), * { font-variant-numeric: normal; }
+h1, h2, h3, h4, h5, h6,
+[style*="fontWeight: 700"], [style*="fontWeight: 800"], [style*="fontWeight: 900"],
+[style*="font-weight: 700"], [style*="font-weight: 800"], [style*="font-weight: 900"],
+.num, [class*="score"], [class*="total"] {
+  font-family: 'Vidaloka', 'Noto Sans Lao', serif;
+}
+
+/* BCEL stripe */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #b71113 0%, #E8B400 50%, #b71113 100%);
+  z-index: 9999;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg4); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--tmid); }
