@@ -1,249 +1,220 @@
-# BCEL Best Teller Award 2026 — Admin Dashboard
+# BCEL Best Teller — ລາງວັນ Teller ດີເດັ່ນ
 
-Next.js 14 TypeScript admin panel with PostgreSQL backend.
+ລະບົບຈັດອັນດັບ Teller ດີເດັ່ນ ຂອງ ທະນາຄານການຄ້າຕ່າງປະເທດລາວ (BCEL)  
+**Next.js 14 · TypeScript · File-based (no runtime DB)**
 
 ---
 
-## Prerequisites
+## ພາບລວມ (Overview)
 
-- Node.js 18+
-- PostgreSQL running at `localhost:5432`
-- Database `RewardTeller` already created
+ລະບົບນີ້ອ່ານຂໍ້ມູນຄະແນນ Teller ຈາກໄຟລ໌ Excel (`.xlsx`) ແລະ ສະແດງຜົນໃນໜ້າເວັບ public ໂດຍບໍ່ຕ້ອງເຊື່ອມຕໍ່ database ໃນ runtime.
 
-```sql
--- Run once in psql to create the database:
-CREATE DATABASE "RewardTeller";
+---
+
+## ໂຄງສ້າງໂປຣເຈັກ (Project Structure)
+
+```
+├── app/
+│   ├── page.tsx                          # ໜ້າ public ຫຼັກ (/ route)
+│   ├── rank-teller/page.tsx              # ໜ້າ rank teller (/rank-teller)
+│   ├── layout.tsx                        # Root layout
+│   ├── globals.css                       # Global styles
+│   ├── public-page.css                   # Styles ສຳລັບໜ້າ public
+│   └── api/
+│       └── public/
+│           └── rank-teller/route.ts      # API: ອ່ານ XLSX ແລະ ສົ່ງຂໍ້ມູນ JSON
+│
+├── components/
+│   └── PublicRankTellerPage.tsx          # Component ຫຼັກ (UI ທັງໝົດ)
+│
+├── file/
+│   ├── 03.2026v1.xlsx                    # ຂໍ້ມູນຄະແນນ ເດືອນ 03/2026
+│   ├── 04.2026v1.xlsx                    # ຂໍ້ມູນຄະແນນ ເດືອນ 04/2026
+│   └── finger_codes.json                 # Mapping: user_code → finger_code (photo ID)
+│
+├── lib/
+│   ├── db.ts                             # PostgreSQL client (ໃຊ້ສຳລັບ scripts ເທົ່ານັ້ນ)
+│   ├── auth.ts                           # JWT auth helpers
+│   ├── format.ts                         # ຟັງຊັ່ນຈັດຮູບແບບຕົວເລກ
+│   └── types.ts                          # TypeScript types
+│
+└── scripts/
+    └── seed.ts / migrate.ts / ...        # DB utility scripts (ບໍ່ໃຊ້ໃນ runtime)
 ```
 
 ---
 
-## Quick Start
+## ແຫຼ່ງຂໍ້ມູນ (Data Sources)
 
-### 1. Install dependencies
+| ໄຟລ໌ | ຈຸດປະສົງ |
+|------|---------|
+| `file/MM.YYYYvN.xlsx` | ຂໍ້ມູນຄະແນນ Teller ລາຍເດືອນ — ອ່ານດ້ວຍ SheetJS |
+| `file/finger_codes.json` | Export ຈາກ `master_teller` table — `{ "BCEL0021": "00797", ... }` |
+
+### ໂຄງສ້າງ Excel (Column Map)
+
+ຂໍ້ມູນເລີ່ມທີ່ **Row 4** (index 3), Column ທີ່ສຳຄັນ:
+
+| Column | Index | Field |
+|--------|-------|-------|
+| A | 0 | No. |
+| B | 1 | User ID |
+| C | 2 | ຊື່-ນາມສະກຸນ |
+| D | 3 | ຕຳແໜ່ງ |
+| E | 4 | ລະດັບ |
+| G | 6 | ຂະແໜງ (Sector) |
+| H | 7 | ສາຂາ/ພາກສ່ວນ (Department) |
+| I | 8 | ວັນເຮັດວຽກ |
+| J | 9 | ທຸລະກຳ/ມື້ → ຄະແນນທຸລະກຳ |
+| K | 10 | ຄ່າສະເລ່ຍ ຄະແນນລວມ |
+| U | 20 | **ຄະແນນລວມ (Final Score)** |
+
+### ການຕັ້ງຊື່ໄຟລ໌ Excel
+
+```
+MM.YYYYvN.xlsx
+│   │     └── version (v1, v2, ...)
+│   └────── ປີ (YYYY)
+└────────── ເດືອນ (MM)
+```
+
+ຕົວຢ່າງ: `04.2026v1.xlsx` = ເດືອນ 04 ປີ 2026 ສະບັບ 1
+
+---
+
+## ການຕິດຕັ້ງ (Setup)
+
+### Prerequisites
+
+- Node.js 18+
+- npm
+
+### ຕິດຕັ້ງ
 
 ```bash
-cd bcel-admin-nextjs
 npm install
 ```
 
-### 2. Configure environment
+### ເພີ່ມໄຟລ໌ຂໍ້ມູນ
 
-Edit `.env.local` (already configured for your setup):
+1. ວາງໄຟລ໌ Excel ໃນໂຟລເດີ `file/` ຕາມຮູບແບບ `MM.YYYYvN.xlsx`
+2. ວາງໄຟລ໌ `finger_codes.json` ໃນໂຟລເດີ `file/`
 
-```env
-DATABASE_URL=postgresql://myuser:mypassword@localhost:5432/RewardTeller
-JWT_SECRET=bcel-best-teller-jwt-secret-2026-change-in-production
-NEXT_PUBLIC_APP_NAME=BCEL Admin
-```
-
-> ⚠️ Change `JWT_SECRET` to a strong random string before going live.
-
-### 3. Run database migration + seed
-
-```bash
-# Apply schema (creates all tables, indexes, triggers)
-npm run db:migrate
-
-# Seed initial data (users, categories, tellers, announcements)
-npm run db:seed
-```
-
-### 4. Start the dev server
+### Development
 
 ```bash
 npm run dev
+# http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to `/admin`.
-
----
-
-## Default Login Credentials
-
-| Username     | Password      | Role        |
-|--------------|---------------|-------------|
-| `superadmin` | `bcel@SA2026` | Super Admin |
-| `editor1`    | `bcel@Ed2026` | Editor      |
-| `editor2`    | `bcel@Ed2026` | Editor      |
-
-> ⚠️ Change all passwords after first login via Settings page.
-
----
-
-## Production Build
+### Production
 
 ```bash
-# Build
 npm run build
-
-# Start production server
 npm run start
 ```
 
-For production with PM2:
+---
 
-```bash
-npm install -g pm2
-npm run build
-pm2 start npm --name "bcel-admin" -- start
-pm2 save
-pm2 startup
+## ການສ້າງ finger_codes.json
+
+Export ຄັ້ງດຽວຈາກ PostgreSQL container (PowerShell):
+
+```powershell
+# 1. Query ຈາກ DB
+docker exec my-postgres psql -U postgres -d bcel_db -c `
+  "SELECT user_code, finger_code FROM master_teller WHERE finger_code IS NOT NULL" `
+  --csv -t > raw.csv
+
+# 2. ແປງເປັນ JSON UTF-8 (ບໍ່ມີ BOM)
+$rows = Import-Csv raw.csv -Header user_code,finger_code
+$map  = @{}
+foreach ($r in $rows) { $map[$r.user_code] = $r.finger_code }
+$json = $map | ConvertTo-Json -Compress
+[System.IO.File]::WriteAllText("file\finger_codes.json", $json, [System.Text.UTF8Encoding]::new($false))
+```
+
+> **ສຳຄັນ:** ຕ້ອງໃຊ້ `UTF8Encoding($false)` — PowerShell 5.1 ຂຽນ BOM ໂດຍ default ເຮັດໃຫ້ `JSON.parse` ລົ້ມເຫຼວ
+
+---
+
+## API Endpoint
+
+### `GET /api/public/rank-teller`
+
+| Parameter | Type | Default | ຄຳອະທິບາຍ |
+|-----------|------|---------|-----------|
+| `rankId` | number | `1` | ລຳດັບ Sheet (1-based) |
+| `issueDate` | string | ລ່າສຸດ | ຮູບແບບ `YYYY-MM` ເຊັ່ນ `2026-04` |
+| `search` | string | `""` | ຄົ້ນຫາຊື່ ຫຼື User ID |
+
+**Response:**
+
+```json
+{
+  "rows": [{ "no": 1, "user_id": "BCEL0021", "fullname": "...", "total_score": 145.5, ... }],
+  "ranks": [
+    { "id": 1, "group_name": "Rank All Teller", "dept_count": 22, "dept_name": "ສຳນັກງານໃຫ່ຍ" }
+  ],
+  "approved_period": "2026-04",
+  "issue_dates": ["2026-04", "2026-03"],
+  "not_announced": false
+}
 ```
 
 ---
 
-## Project Structure
+## ໜ້າ Public (Features)
 
-```
-bcel-admin-nextjs/
-├── app/
-│   ├── globals.css          # Global styles + BCEL CSS variables
-│   ├── layout.tsx           # Root layout (Kanit + Sarabun fonts)
-│   ├── page.tsx             # Root page (redirects to /admin)
-│   ├── admin/
-│   │   └── page.tsx         # Admin SPA shell
-│   └── api/
-│       ├── auth/
-│       │   ├── login/       # POST /api/auth/login
-│       │   ├── logout/      # POST /api/auth/logout
-│       │   └── me/          # GET /api/auth/me
-│       ├── tellers/         # GET/POST + /[id] GET/PUT/DELETE
-│       ├── categories/      # GET all categories
-│       ├── announcements/   # GET/POST + /[id] PUT/DELETE
-│       ├── users/           # GET/POST + /[id] PUT/DELETE
-│       ├── dashboard/       # GET KPIs, charts, top tellers
-│       ├── upload/          # POST bulk upsert + GET history
-│       └── settings/        # GET/PUT/DELETE settings
-├── components/
-│   ├── AdminApp.tsx         # Root client component, page routing
-│   ├── LoginForm.tsx        # Login UI
-│   ├── Sidebar.tsx          # Navigation sidebar
-│   ├── Topbar.tsx           # Page header + action buttons
-│   ├── Toast.tsx            # Toast notification stack
-│   └── pages/
-│       ├── Dashboard.tsx    # KPI cards + charts
-│       ├── TellersPage.tsx  # Teller CRUD table
-│       ├── WinnersPage.tsx  # Winners by category
-│       ├── AnnouncementsPage.tsx
-│       ├── UploadPage.tsx   # Excel drag-drop upload
-│       ├── ExportPage.tsx   # CSV + print export
-│       ├── UsersPage.tsx    # User management (superadmin)
-│       └── SettingsPage.tsx # Toggles, password, clear data
-├── lib/
-│   ├── db.ts                # PostgreSQL pool + query helpers
-│   ├── auth.ts              # JWT create/verify, RBAC permissions
-│   └── types.ts             # TypeScript interfaces
-├── scripts/
-│   ├── migrate.sql          # Full schema DDL
-│   └── seed.ts              # Seed users, categories, tellers
-├── middleware.ts            # Redirects / → /admin
-└── .env.local               # Environment variables
-```
+- **ຈັດອັນດັບລວມ** — ຮຽງຕາມ `total_score` DESC, reassign No. ລ/ດ ໃໝ່
+- **Podium Top 5** — ຈັດຮຽງ 4th | 2nd | 1st | 3rd | 5th, ສຳລັບຄະແນນ ≥ 100 ເທົ່ານັ້ນ
+- **Medal Icons** — 🥇🥈🥉 ສຳລັບ rank 1–3, AwardBadge ສຳລັບ rank 4–5 (ຄະແນນ ≥ 100)
+- **ຈັດອັນດັບ ແຍກສາຂາ** — ເລືອກ Sheet/ສາຂາ ແລ້ວ filter ພາຍໃນ
+- **ຮູບພະນັກງານ** — ດຶງຈາກ `http://10.0.2.140:8687/api/employee/img?eid={finger_code}`
+- **ຄົ້ນຫາ** — ຄົ້ນຫາຕາມຊື່ ຫຼື User ID (debounced)
+- **Modal ລາຍລະອຽດ** — ກົດເບິ່ງ score breakdown ລາຍບຸກຄົນ
+- **ເລືອກເດືອນ** — ປ່ຽນ period ຈາກ issue_dates ທີ່ມີ
 
 ---
 
-## API Reference
+## ລາຍຊື່ສາຂາ (Branch Codes)
 
-### Auth
-| Method | Path                | Body / Notes                    |
-|--------|---------------------|---------------------------------|
-| POST   | `/api/auth/login`   | `{ username, password }`        |
-| POST   | `/api/auth/logout`  | Clears cookie                   |
-| GET    | `/api/auth/me`      | Returns current session         |
-
-### Tellers
-| Method | Path                 | Notes                            |
-|--------|----------------------|----------------------------------|
-| GET    | `/api/tellers`       | `?search=&category_id=&page=`    |
-| POST   | `/api/tellers`       | Add teller (editor+)             |
-| GET    | `/api/tellers/:id`   |                                  |
-| PUT    | `/api/tellers/:id`   | Update (editor+)                 |
-| DELETE | `/api/tellers/:id`   | Delete (superadmin only)         |
-
-### Upload (Excel)
-| Method | Path           | Notes                                    |
-|--------|----------------|------------------------------------------|
-| POST   | `/api/upload`  | `{ rows: TellerRow[] }` — bulk upsert    |
-| GET    | `/api/upload`  | Upload history                           |
-
-### Settings
-| Method | Path             | Notes                               |
-|--------|------------------|-------------------------------------|
-| GET    | `/api/settings`  | All key/value settings              |
-| PUT    | `/api/settings`  | `{ key, value }` — upsert           |
-| DELETE | `/api/settings`  | Clear ALL tellers (superadmin only) |
-
----
-
-## Roles & Permissions
-
-| Permission      | superadmin | editor |
-|-----------------|:----------:|:------:|
-| teller.add      | ✅          | ✅      |
-| teller.edit     | ✅          | ✅      |
-| teller.delete   | ✅          | ❌      |
-| ann.add         | ✅          | ✅      |
-| ann.edit        | ✅          | ✅      |
-| ann.delete      | ✅          | ❌      |
-| user.manage     | ✅          | ❌      |
-| settings.clear  | ✅          | ❌      |
-| export          | ✅          | ✅      |
-
----
-
-## Database Schema
-
-5 tables: `admin_users`, `categories`, `tellers`, `announcements`, `app_settings`
-Plus `upload_history` for tracking Excel imports.
-
-Key constraints:
-- `UNIQUE(user_code, category_id)` on `tellers` — allows same person in multiple categories
-- Enum CHECK constraints on `status`, `role`, `tag` columns
-- `updated_at` auto-updates via PostgreSQL trigger
-
----
-
-## Excel Upload Format
-
-The Upload page accepts `.xlsx` files. Sheets must be named exactly as the category `sheet_key` values:
-
-```
-1.1.Top_Unit18b
-1.2.Top_Service18b
-1.3.Top_Cash18b
-2.1.Top_Unit3VTE
-2.2.Top_Service3VTE
-3.3.Top_Cash3VTE
-4.1.Top_Cash HQV
-5.1.Top_Clearing OPC
-5.2.Top_Product OPC
-5.3.Top_Aftersale OPC
-5.4.Top_Deposit OPC
-5.5.Top_Open N Ac OPC
-5.6.Top_Transfer
-```
-
-Each sheet requires columns: `RANK`, `USER CODE`, `NAME`, `UNIT`, `BRANCH`, `SCORE`
-
----
-
-## Security Notes for Production
-
-1. Set a strong `JWT_SECRET` (32+ random characters)
-2. Change all default passwords immediately
-3. Use HTTPS (configure in your reverse proxy / Nginx)
-4. Set `ssl: { rejectUnauthorized: true }` in `lib/db.ts` for SSL-enabled PostgreSQL
-5. Consider rate limiting on `/api/auth/login`
+| Code | ສາຂາ |
+|------|------|
+| 010-HQV | ສຳນັກງານໃຫ່ຍ |
+| 019-PHB | ສາຂາໂພນໂຮງ |
+| 020-KHM | ສາຂາຄຳມ່ວນ |
+| 030-SVN | ສາຂາສະຫວັນນະເຂດ |
+| 040-CPS | ສາຂາຈຳປາສັກ |
+| 050-LPB | ສາຂາຫຼວງພະບາງ |
+| 060-ODX | ສາຂາອຸດົມໄຊ |
+| 070-LNT | ສາຂາຫຼວງນໍ້າທາ |
+| 080-ATP | ສາຂາອັດຕະປື |
+| 090-VTC | ສາຂານະຄອນຫຼວງວຽງຈັນ |
+| 110-BOK | ສາຂາບໍ່ແກ້ວ |
+| 120-XYL | ສາຂາໄຊຍະບູລີ |
+| 130-XKH | ສາຂາຊຽງຂວາງ |
+| 140-VVB | ສາຂາວັງວຽງ |
+| 150-BLX | ສາຂາບໍລິຄຳໄຊ |
+| 160-DDB | ສາຂາດົງໂດກ |
+| 170-HPB | ສາຂາຫົວພັນ |
+| 180-PSL | ສາຂາຜົ້ງສາລີ |
+| 190-SEK | ສາຂາເຊກອງ |
+| 200-SLV | ສາຂາສາລະວັນ |
+| 210-XSB | ສາຂາໄຊສົມບູນ |
+| 220-SST | ສາຂາໄຊເສດຖາ |
 
 ---
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Database**: PostgreSQL via `pg` (node-postgres)
-- **Auth**: JWT via `jose`, stored in httpOnly cookies
-- **Passwords**: `bcryptjs` (12 salt rounds)
-- **Excel parsing**: `xlsx` (client-side)
-- **Styling**: Tailwind CSS + inline CSS variables
-- **Fonts**: Kanit (headings), Sarabun (body), IBM Plex Mono (code)
+| ເຕັກໂນໂລຈີ | ຈຸດປະສົງ |
+|------------|---------|
+| Next.js 14 (App Router) | Framework |
+| TypeScript | Language |
+| SheetJS (`xlsx`) | ອ່ານໄຟລ໌ Excel ໃນ runtime |
+| React 18 | UI |
+| Tailwind CSS | Utility styles |
+| `jose` | JWT (admin auth) |
+| `bcryptjs` | Password hashing |
+| `pg` | PostgreSQL (scripts only, ບໍ່ໃຊ້ໃນ runtime) |
