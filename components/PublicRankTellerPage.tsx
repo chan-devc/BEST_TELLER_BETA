@@ -480,6 +480,7 @@ export default function PublicRankTellerPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const byDeptInitRef               = useRef(false)
   const [modalRow, setModalRow]         = useState<RankRow | null>(null)
+  const [showFormula, setShowFormula]   = useState(false)
   const [approvedPeriod, setApprovedPeriod] = useState<string | null>(null)
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null)
   const [issueDates, setIssueDates]         = useState<string[]>([])
@@ -550,7 +551,6 @@ export default function PublicRankTellerPage() {
   const mainRanks  = ranks.filter(r => r.id <= 3)
   const activeRank = ranks.find(r => r.id === (isRankView ? rankId : (byDeptRankId ?? rankId)))
   const activeDept = departments.find(d => d.id === deptId)
-  const activeLabel = activeDept?.department ?? activeRank?.group_name ?? ''
 
   // Translate rank group names to Lao
   const rankNameLao: Record<string, string> = {
@@ -582,6 +582,8 @@ export default function PublicRankTellerPage() {
   }
   const rankLabel = (name: string, deptName?: string | null) =>
     rankNameLao[name] ?? (deptName ? fmtUnit(deptName) : name)
+
+  const activeLabel = activeDept?.department ?? (activeRank ? rankLabel(activeRank.group_name, activeRank.dept_name) : '')
 
   const handleRankClick = (view: ActiveView) => {
     setActiveView(view)
@@ -845,7 +847,84 @@ export default function PublicRankTellerPage() {
           <span style={{ display:'flex', opacity: activeView === 'by_dept' ? 1 : .6 }}>{Ico.building(14)}</span>
           ຈັດອັນດັບ ແຍກເແຕ່ລະພາກສ່ວນ
         </button>
+
       </nav>
+
+      {/* ── Formula Modal ── */}
+      {showFormula && (
+        <div onClick={() => setShowFormula(false)} style={{ position:'fixed', inset:0, background:'rgba(10,20,50,.55)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(4px)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:24, maxWidth:560, width:'100%', boxShadow:'0 24px 60px rgba(10,20,50,.25)', overflow:'hidden', animation:'fadeUp .25s ease both', maxHeight:'90vh', overflowY:'auto' }}>
+
+            {/* Header */}
+            <div style={{ background:'linear-gradient(135deg,#b71113,#8a0c0d)', padding:'20px 24px 18px', position:'relative', borderBottom:'3px solid #D4A017' }}>
+              <div style={{ fontSize:18, fontWeight:900, color:'#fff' }}>ສູດຄຳນວນຄະແນນ Teller</div>
+              <div style={{ fontSize:12, color:'rgba(255,255,255,.65)', marginTop:4 }}>BCEL Best Teller Award 2026</div>
+              <button onClick={() => setShowFormula(false)} style={{ position:'absolute', top:14, right:14, zIndex:2, background:'rgba(255,255,255,.18)', border:'1px solid rgba(255,255,255,.25)', borderRadius:8, width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div style={{ padding:'20px 24px 24px' }}>
+
+              {/* Formula summary */}
+              <div style={{ background:'linear-gradient(135deg,#FFF8E0,#FFF3CC)', border:'2px solid #F5C518', borderRadius:16, padding:'14px 18px', marginBottom:20, textAlign:'center' }}>
+                <div style={{ fontSize:11, fontWeight:800, letterSpacing:'1.5px', color:'#A07000', marginBottom:8, textTransform:'uppercase' }}>ຄະແນນລວມ (Total Score)</div>
+                <div style={{ fontSize:13, fontWeight:700, color:'#7A5000', lineHeight:1.8, fontFamily:"'Noto Sans Lao',serif" }}>
+                  = ຄ.ທຸລະກໍາ (70%) + ຄ.ຜິດພາດ (20%) + ຄ.ວິໄນ (10%)<br/>
+                  + ໂບນັດຕ່າງໆ (ສູງສຸດ +15)
+                </div>
+              </div>
+
+              {/* Main components */}
+              <div style={{ fontSize:13, fontWeight:800, color:'#838380', letterSpacing:'.5px', marginBottom:10, textTransform:'uppercase' }}>ສ່ວນປະກອບຫຼັກ</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
+                {[
+                  { label:'ຄະແນນທຸລະກໍາ', weight:'70%', color:'#F59E0B', bg:'#FFFBEB', desc:'ຄຳນວນຈາກ ຈຳນວນທຸລະກໍາ / ວັນ ທຽບກັບຄ່າສະເລ່ຍ' },
+                  { label:'ຄະແນນຜິດພາດ Rev+Cor', weight:'20%', color:'#b71113', bg:'#FFF1F2', desc:'ຫັກຕາມຈຳນວນ Reverse ແລະ Recor ທີ່ເກີດຂຶ້ນ' },
+                  { label:'ຄະແນນວິໄນ', weight:'10%', color:'#10B981', bg:'#ECFDF5', desc:'ຕາມວິໄນ ການເຂົ້າ-ອອກວຽກ ແລະ ພຶດຕິກໍາ' },
+                ].map((c, i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:12, background:c.bg, border:`1.5px solid ${c.color}22` }}>
+                    <div style={{ flexShrink:0, minWidth:52, padding:'4px 8px', borderRadius:8, background:c.color, color:'#fff', fontSize:13, fontWeight:900, textAlign:'center' }}>{c.weight}</div>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:800, color:'#0A1628' }}>{c.label}</div>
+                      <div style={{ fontSize:11, color:'#838380', marginTop:2 }}>{c.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bonus components */}
+              <div style={{ fontSize:13, fontWeight:800, color:'#838380', letterSpacing:'.5px', marginBottom:10, textTransform:'uppercase' }}>ໂບນັດ (Bonus)</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:20 }}>
+                {[
+                  { label:'ເກີນຄ່າສະເລ່ຍ', bonus:'+5',   color:'#06B6D4', desc:'ທຸລະກໍາ / ມື້ ສູງກວ່າຄ່າສະເລ່ຍ' },
+                  { label:'ໂບນັດ Reverse',  bonus:'+2.5', color:'#F97316', desc:'ບໍ່ມີ Reverse transactions' },
+                  { label:'ໂບນັດ ReCor',    bonus:'+2.5', color:'#EC4899', desc:'ບໍ່ມີ Recorrection' },
+                  { label:'ໂບນັດ ເຂົ້າວຽກ', bonus:'+5',   color:'#8B5CF6', desc:'ເຂົ້າວຽກຄົບ ບໍ່ຂາດ-ສາຍ' },
+                ].map((b, i) => (
+                  <div key={i} style={{ padding:'10px 14px', borderRadius:12, background:'#F8F9FC', border:'1.5px solid #E8EBF5' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+                      <div style={{ fontSize:12, fontWeight:800, color:'#0A1628' }}>{b.label}</div>
+                      <div style={{ fontSize:14, fontWeight:900, color:b.color }}>{b.bonus}</div>
+                    </div>
+                    <div style={{ fontSize:11, color:'#838380' }}>{b.desc}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Award threshold */}
+              <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:12, background:'linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,140,0,.1))', border:'1.5px solid rgba(212,160,23,.4)' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A017" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 18v-2h-.5"/></svg>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:800, color:'#A07000' }}>ເກນລາງວັນດີເດັ່ນ</div>
+                  <div style={{ fontSize:12, color:'#7A5000', marginTop:2 }}>ຄະແນນລວມ <strong>≥ 100</strong> ຄະແນນ — ໄດ້ຮັບ ລາງວັນ Best Teller Award</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
 
 
       <main role="main" aria-label="Teller ranking results" className="pub-main">
@@ -858,6 +937,16 @@ export default function PublicRankTellerPage() {
               <div style={{ width: 4, height: 22, background: 'var(--red)', borderRadius: 2 }} />
               <span style={{ fontSize: 20, fontWeight: 900, color: '#0A1628', fontFamily: 'var(--font-lao)' }}>5 ອັນດັບຕົ້ນ</span>
               {activeLabel && <span style={{ fontSize: 13, color: '#8A9BB8', fontWeight: 600 }}>{activeLabel}</span>}
+              <button
+                onClick={() => setShowFormula(true)}
+                title="ສູດຄຳນວນຄະແນນ"
+                style={{ marginLeft: 4, display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:16, border:'1.5px solid rgba(183,17,19,.22)', background:'rgba(183,17,19,.06)', color:'#b71113', fontSize:12, fontWeight:700, cursor:'pointer', transition:'.15s', flexShrink:0 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(183,17,19,.14)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(183,17,19,.06)' }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                ສູດຄະແນນ
+              </button>
             </div>
 
             {/* Podium: 4th | 2nd | 1st | 3rd | 5th — all bottoms aligned */}
