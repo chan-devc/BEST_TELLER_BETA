@@ -131,7 +131,7 @@
     radial-gradient(ellipse 35% 55% at 8% 85%,  rgba(245,197,24,.1)  0%, transparent 55%);
 }
 .pub-page .hero-in {
-  max-width: 1180px; margin: 0 auto;
+  max-width: 1200px; margin: 0 auto;
   padding: var(--s6) var(--s5) var(--s5);
   display: grid; grid-template-columns: 1fr 256px;
   gap: var(--s5); align-items: center;
@@ -342,6 +342,7 @@
 @keyframes float      { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
 @keyframes fadeUp     { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeIn     { from{opacity:0} to{opacity:1} }
+@keyframes scaleIn    { from{opacity:0;transform:scale(.7)} to{opacity:1;transform:scale(1)} }
 @keyframes sparkle    { 0%,100%{transform:scale(0) rotate(0deg);opacity:0} 50%{transform:scale(1) rotate(180deg);opacity:1} }
 @keyframes confetti   { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }
 @keyframes popIn      { 0%{transform:scale(.5) translateX(-50%);opacity:0} 70%{transform:scale(1.1) translateX(-50%)} 100%{transform:scale(1) translateX(-50%);opacity:1} }

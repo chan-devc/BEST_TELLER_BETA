@@ -87,22 +87,26 @@ function cellVal(ws: XLSX.WorkSheet, r: number, c: number): unknown {
   return cell.v
 }
 
-// ── Count distinct departments and get first sector name from a sheet ────
-function countSheetRows(ws: XLSX.WorkSheet | undefined): { count: number; sectorName: string | null } {
-  if (!ws) return { count: 0, sectorName: null }
+// ── Count distinct departments and get first department/sector name from a sheet ────
+function countSheetRows(ws: XLSX.WorkSheet | undefined): { count: number; sectorName: string | null; deptName: string | null } {
+  if (!ws) return { count: 0, sectorName: null, deptName: null }
   const ref = ws['!ref']
-  if (!ref) return { count: 0, sectorName: null }
+  if (!ref) return { count: 0, sectorName: null, deptName: null }
   const range = XLSX.utils.decode_range(ref)
   const depts = new Set<string>()
   let sectorName: string | null = null
+  let deptName: string | null = null
   for (let r = 3; r <= range.e.r; r++) {
     const uid    = cellVal(ws, r, C.user_id)
     const dept   = cellVal(ws, r, C.department)
     const sector = cellVal(ws, r, C.sector)
-    if (uid && dept) depts.add(String(dept).trim())
+    if (uid && dept) {
+      depts.add(String(dept).trim())
+      if (!deptName) deptName = String(dept).trim()
+    }
     if (!sectorName && uid && sector) sectorName = String(sector).trim()
   }
-  return { count: depts.size, sectorName }
+  return { count: depts.size, sectorName, deptName }
 }
 
 // ── Parse ranking rows from a sheet (data starts at row index 3) ──────────
@@ -220,20 +224,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Cannot read file' }, { status: 500 })
   }
 
-  // ── Build ranks list from sheet names (count rows in each sheet) ────────
-  const ranks = wb.SheetNames.map((name, idx) => {
-    const { count, sectorName } = countSheetRows(wb.Sheets[name])
+  // ── Build ranks list from rank sheets only (exclude data sheets like 2.2.Reverse) ────────
+  const rankSheetNames = wb.SheetNames.filter(n => /^Rank_/i.test(n))
+  const ranks = rankSheetNames.map((name, idx) => {
+    const { count, deptName } = countSheetRows(wb.Sheets[name])
     return {
       id:         idx + 1,
       group_name: name,
       dept_count: count,
-      dept_name:  sectorName,
+      dept_name:  deptName,
     }
   })
 
   // ── Select sheet by rankId ───────────────────────────────────────────────
   const sheetIndex = Math.max(0, rankId - 1)
-  const sheetName  = wb.SheetNames[sheetIndex] ?? wb.SheetNames[0]
+  const sheetName  = rankSheetNames[sheetIndex] ?? rankSheetNames[0]
   const ws         = wb.Sheets[sheetName]
 
   const fingerCodes = loadFingerCodes()

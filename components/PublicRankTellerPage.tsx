@@ -50,13 +50,14 @@ const empPhoto = (fingerCode: string | null | undefined) =>
   fingerCode ? `http://10.0.2.140:8687/api/employee/img?eid=${fingerCode}` : null
 
 function EmpPhoto({
-  fingerCode, name, size, border = '2px solid #fff', shadow,
+  fingerCode, name, size, border = '2px solid #fff', shadow, onZoom,
 }: {
   fingerCode: string | null | undefined
   name: string
   size: number
   border?: string
   shadow?: string
+  onZoom?: (src: string) => void
 }) {
   const [failed, setFailed] = React.useState(false)
   const url = empPhoto(fingerCode)
@@ -67,19 +68,24 @@ function EmpPhoto({
         src={url}
         alt={name}
         className="emp-photo"
-        style={{ width: size, height: size, border, boxShadow: shadow, flexShrink: 0, borderRadius: '50%', objectFit: 'contain', background: '#fff' }}
+        style={{ width: size, height: size, border, boxShadow: shadow, flexShrink: 0, borderRadius: '50%', objectFit: 'contain', background: '#fff', cursor: onZoom ? 'zoom-in' : undefined }}
         onError={() => setFailed(true)}
+        onClick={onZoom ? () => onZoom(url) : undefined}
       />
     )
   }
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: 'rgba(183,17,19,.15)', border: `${border}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.35, fontWeight: 900, color: '#b71113',
-      fontFamily: "'Noto Sans Lao',serif",
-    }}>
+    <div
+      style={{
+        width: size, height: size, borderRadius: '50%', flexShrink: 0,
+        background: 'rgba(183,17,19,.15)', border: `${border}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: size * 0.35, fontWeight: 900, color: '#b71113',
+        fontFamily: "'Noto Sans Lao',serif",
+        cursor: onZoom ? 'zoom-in' : undefined,
+      }}
+      onClick={onZoom && url ? () => onZoom(url) : undefined}
+    >
       {initial}
     </div>
   )
@@ -279,26 +285,11 @@ function AwardBadge({ no, size = 36 }: { no: number; size?: number }) {
 }
 
 // ── Score detail modal ───────────────────────────────────────────────────────
-function ScoreModal({ row, onClose, maxScore, minScore }: {
+function ScoreModal({ row, onClose }: {
   row: RankRow; onClose: () => void
-  maxScore: number; minScore: number
 }) {
   const isReward   = Number(row.total_score) >= 100
 
-  // Score components — 3-column grid, ordered by contribution
-  const mainScores = [
-    { label: 'ຄະແນນທຸລະກໍາ',  value: row.pro_score,          color: '#F59E0B' },
-    { label: 'ຄະແນນວິໄນ',           value: row.discipline_score,   color: '#10B981' },
-    { label: 'ຜິດພາດ Rev',  value: row.reverse_score,      color: '#b71113' },
-    { label: 'ຜິດພາດ Rec',    value: row.recor_score,        color: '#8B5CF6' },
-  ]
-  const bonusScores = [
-    { label: 'ຄະແນນເກີນຄ່າສະເລ່ຍ', value: row.txn_over_avg_score, color: '#06B6D4' },
-    { label: 'ໂບນັດ Reverse', value: row.rev_bonus,          color: '#F97316' },
-    { label: 'ໂບນັດ ReCor',   value: row.recor_bonus,        color: '#EC4899' },
-    { label: 'ຄະແນນ ບໍ່ມາການຊ້າ ຫຼື ບໍ່ກັບໄວ',     value: row.attendent_score,    color: '#14B8A6' },
-  ]
-  const scores = mainScores // kept for compatibility
 
   const statCard = (label: string, value: React.ReactNode, color: string, sub?: string) => (
     <div style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: 12, background: '#F8F9FC', border: `1px solid ${color}20`, textAlign: 'center' }}>
@@ -329,7 +320,7 @@ function ScoreModal({ row, onClose, maxScore, minScore }: {
             </div>
             {isReward && (
               <div style={{ flexShrink:0, display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:10, background:'linear-gradient(135deg,rgba(255,215,0,.3),rgba(255,140,0,.25))', border:'1.5px solid rgba(245,197,24,.5)', fontSize: 12, fontWeight:900, color:'#FFE066' }}>
-                {Ico.award(11)} ລາງວັນ
+                {Ico.award(11)} ພະນັກງານດີເດັ່ນ
               </div>
             )}
           </div>
@@ -342,10 +333,10 @@ function ScoreModal({ row, onClose, maxScore, minScore }: {
 
           {/* ── Reference stats row ── */}
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.5px', color: '#838380', marginBottom: 8, fontFamily: 'var(--font-lao)' }}>ຂໍ້ມູນອ້າງອີງ</div>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.5px', color: '#838380', marginBottom: 8, fontFamily: 'var(--font-lao)' }}>ຂໍ້ມູນທຸລະກໍາ</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              {statCard('ຄະແນນທຸລະກຳ',    fmt(Number(row.txn_score)),      '#6366F1', 'raw points')}
-              {statCard('ທຸລະກຳສະເລ່ຍ / ມື້',  fmt(Number(row.pro_score)),      '#0EA5E9', `${row.day_of_work} ວັນ`)}
+              {statCard('ລວມທຸລະກໍາ',    fmt(Number(row.txn_score)),      '#6366F1')}
+              {statCard('ສະເລ່ຍທຸລະກໍາ/ມື້',  fmt(Number(row.pro_score)),      '#0EA5E9', `${row.day_of_work} ມື້`)}
             </div>
           </div>
 
@@ -353,36 +344,60 @@ function ScoreModal({ row, onClose, maxScore, minScore }: {
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.5px', color: '#838380', marginBottom: 8, fontFamily: 'var(--font-lao)' }}>ສ່ວນປະກອບຄະແນນ</div>
 
-            {[
-              [
-                { label: 'ຄະແນນທຸລະກໍາ',             value: row.pro_score,          color: '#F59E0B', bg: '#F8F9FC' },
-                { label: 'ຄະແນນເກີນຄ່າສະເລ່ຍ',       value: row.txn_over_avg_score, color: '#06B6D4', bg: '#F0FBFF' },
-              ],
-              [
-                { label: 'ຜິດພາດ Rev',                 value: row.reverse_score,      color: '#b71113', bg: '#F8F9FC' },
-                { label: 'ໂບນັດ Reverse',              value: row.rev_bonus,          color: '#F97316', bg: '#FFFBF5' },
-              ],
-              [
-                { label: 'ຜິດພາດ Rec',                 value: row.recor_score,        color: '#8B5CF6', bg: '#F8F9FC' },
-                { label: 'ໂບນັດ ReCor',                value: row.recor_bonus,        color: '#EC4899', bg: '#FFF5FB' },
-              ],
-              [
-                { label: 'ຄະແນນວິໄນ',                 value: row.discipline_score,   color: '#10B981', bg: '#F8F9FC' },
-                { label: 'ຄະແນນ ບໍ່ມາການຊ້າ ຫຼື ບໍ່ກັບໄວ', value: row.attendent_score, color: '#14B8A6', bg: '#F0FFFE' },
-              ],
-            ].map((pair, ri) => (
-              <div key={ri} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                {pair.map(s => (
-                  <div key={s.label} style={{ padding: '10px 12px', borderRadius: 11, background: s.bg, border: `1px solid ${s.color}22`, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 3, height: 26, borderRadius: 2, background: s.color, flexShrink: 0 }} />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 11, color: '#838380', fontWeight: 700, letterSpacing: '.3px', fontFamily: 'var(--font-lao)', lineHeight: 1.3 }}>{s.label}</div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: s.color, fontFamily: "'Vidaloka',serif", lineHeight: 1.3 }}>{fmt(s.value)}</div>
-                    </div>
+            {/* Row 1: ທຸລະກໍາ */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+              {([
+                { label: 'ຄະແນນທຸລະກໍາ',       value: row.pro_score,          color: '#F59E0B', bg: '#F8F9FC' },
+                { label: 'ຄະແນນເກີນຄ່າສະເລ່ຍ', value: row.txn_over_avg_score, color: '#06B6D4', bg: '#F0FBFF' },
+              ] as const).map(s => (
+                <div key={s.label} style={{ padding: '10px 12px', borderRadius: 11, background: s.bg, border: `1px solid ${s.color}22`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 3, height: 26, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: '#838380', fontWeight: 700, letterSpacing: '.3px', fontFamily: 'var(--font-lao)', lineHeight: 1.3 }}>{s.label}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: s.color, fontFamily: "'Vidaloka',serif", lineHeight: 1.3 }}>{fmt(s.value)}</div>
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+
+            {/* Row 2: Rev+Cor merged left, two bonus cards right */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: 8, marginBottom: 8 }}>
+              <div style={{ gridRow: 'span 2', padding: '10px 12px', borderRadius: 11, background: '#FFF1F2', border: '1px solid #b7111322', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 3, borderRadius: 2, background: '#b71113', flexShrink: 0, alignSelf: 'stretch' }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 11, color: '#838380', fontWeight: 700, letterSpacing: '.3px', fontFamily: 'var(--font-lao)', lineHeight: 1.3 }}>ຄະແນນຜິດພາດ Rev + Cor</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#b71113', fontFamily: "'Vidaloka',serif", lineHeight: 1.3 }}>{fmt(Number(row.reverse_score) + Number(row.recor_score))}</div>
+                </div>
               </div>
-            ))}
+              {([
+                { label: 'ຄະແນນບໍ່ມີ Reverse', value: row.rev_bonus,    color: '#F97316', bg: '#FFFBF5' },
+                { label: 'ຄະແນນບໍ່ມີ Cor',     value: row.recor_bonus, color: '#EC4899', bg: '#FFF5FB' },
+              ] as const).map(s => (
+                <div key={s.label} style={{ padding: '10px 12px', borderRadius: 11, background: s.bg, border: `1px solid ${s.color}22`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 3, height: 26, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: '#838380', fontWeight: 700, letterSpacing: '.3px', fontFamily: 'var(--font-lao)', lineHeight: 1.3 }}>{s.label}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: s.color, fontFamily: "'Vidaloka',serif", lineHeight: 1.3 }}>{fmt(s.value)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Row 3: ວິໄນ */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+              {([
+                { label: 'ຄະແນນວິໄນ',                  value: row.discipline_score, color: '#10B981', bg: '#F8F9FC' },
+                { label: 'ຄະແນນບໍ່ມາການຊ້າ ຫຼື ກັບໄວ', value: row.attendent_score, color: '#14B8A6', bg: '#F0FFFE' },
+              ] as const).map(s => (
+                <div key={s.label} style={{ padding: '10px 12px', borderRadius: 11, background: s.bg, border: `1px solid ${s.color}22`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 3, height: 26, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: '#838380', fontWeight: 700, letterSpacing: '.3px', fontFamily: 'var(--font-lao)', lineHeight: 1.3 }}>{s.label}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: s.color, fontFamily: "'Vidaloka',serif", lineHeight: 1.3 }}>{fmt(s.value)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* ── Total ── */}
@@ -416,38 +431,8 @@ function useCountUp(target: number, dec = 0, delay = 0) {
 }
 
 const M_COLOR  = ['#D4A017', '#7A8FA6', '#b71113']
-const M_GRAD   = ['linear-gradient(135deg,#FFF8E0,#FFF0B0)', 'linear-gradient(135deg,#F2F5FA,#E6ECF5)', 'linear-gradient(135deg,#FFF0F0,#FFE4E4)']
 const M_RING   = ['#E8C040', '#A8BAD0', '#b71113']
-const M_SHADOW = ['rgba(220,170,0,.25)', 'rgba(140,160,180,.2)', 'rgba(183,17,19,.22)']
 
-const STAT_ICONS: Record<string, { svg: React.ReactNode; color: string; bg: string }> = {
-  people:   { color: '#6366F1', bg: '#EEF2FF', svg: Ico.users(22) },
-  trophy:   { color: '#F59E0B', bg: '#FFFBEB', svg: Ico.trophy(22) },
-  chart:    { color: '#10B981', bg: '#ECFDF5', svg: Ico.chart(22) },
-  building: { color: '#b71113', bg: '#FFF1F2', svg: Ico.building(22) },
-}
-
-function StatCard({ iconKey, value, label, delay }: { iconKey: string; value: React.ReactNode; label: string; delay?: number }) {
-  const ic = STAT_ICONS[iconKey]
-  return (
-    // Trend #4: Neumorphism — soft shadow depth
-    <div
-      className="stat-card neu"
-      role="article"
-      aria-label={`${label}: ${value}`}
-      style={{ animation: `fadeUp .5s ${delay ?? 0}s ease both`, position: 'relative', overflow: 'hidden' }}
-    >
-      <div aria-hidden="true" style={{ position: 'absolute', right: -14, bottom: -14, width: 72, height: 72, borderRadius: '50%', background: ic.bg, opacity: .4 }} />
-      <div style={{ width: 46, height: 46, borderRadius: 14, background: ic.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ic.color, marginBottom: 16, boxShadow: `0 4px 14px ${ic.color}25` }}>
-        {ic.svg}
-      </div>
-      {/* Trend #5: Typography — large number as design element */}
-      <div style={{ fontSize: 32, fontWeight: 900, color: '#b71113', letterSpacing: '-.5px', lineHeight: 1, fontFamily: "'Vidaloka', serif" }}>{value}</div>
-      <div className="label-sm" style={{ color: '#8A9BB8', marginTop: 7 }}>{label}</div>
-      <div aria-hidden="true" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, borderRadius: '0 0 20px 20px', background: `linear-gradient(90deg,${ic.color},${ic.color}44)` }} />
-    </div>
-  )
-}
 
 const PAGE_SIZE = 10
 
@@ -465,13 +450,11 @@ export default function PublicRankTellerPage() {
   const [loading, setLoading]   = useState(true)
   const [animated, setAnimated] = useState(false)
   const [page, setPage]         = useState(1)
-  const [darkMode, setDarkMode] = useState(false)
 
   const tilt1 = useRef<HTMLDivElement>(null)
   const tilt2 = useRef<HTMLDivElement>(null)
   const tilt3 = useRef<HTMLDivElement>(null)
   useTilt(tilt1); useTilt(tilt2); useTilt(tilt3)
-  const tiltRefs = [tilt1, tilt2, tilt3]
   // Single source of truth — each tab fully independent
   const [activeView, setActiveView] = useState<ActiveView>('rank_1')
   const [deptId, setDeptId]             = useState<number | null>(null)
@@ -481,6 +464,7 @@ export default function PublicRankTellerPage() {
   const byDeptInitRef               = useRef(false)
   const [modalRow, setModalRow]         = useState<RankRow | null>(null)
   const [showFormula, setShowFormula]   = useState(false)
+  const [zoomData, setZoomData]         = useState<{ src: string; row: RankRow } | null>(null)
   const [approvedPeriod, setApprovedPeriod] = useState<string | null>(null)
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null)
   const [issueDates, setIssueDates]         = useState<string[]>([])
@@ -552,38 +536,43 @@ export default function PublicRankTellerPage() {
   const activeRank = ranks.find(r => r.id === (isRankView ? rankId : (byDeptRankId ?? rankId)))
   const activeDept = departments.find(d => d.id === deptId)
 
-  // Translate rank group names to Lao
+  // Translate rank group names to Lao (keys = actual Excel sheet names)
   const rankNameLao: Record<string, string> = {
-    'Rank All Teller':       'ຈັດອັນດັບ ພາກສ່ວນ (21 ສາຂາ, 1 ສູນ, 1 ພະແນກ)',
-    'Rank VTE Teller':       'ຈັດອັນດັບ ພາກສ່ວນ ນະຄອນຫຼວງວຽງຈັນ',
-    'Rank 18 Branch Teller': 'ຈັດອັນດັບ ພາກສ່ວນ 18 ສາຂາຕ່າງແຂວງ',
-    'Rank 010-HQV':          'ສຳນັກງານໃຫ່ຍ',
-    'Rank 019-PHB':          'ສາຂາໂພນໂຮງ',
-    'Rank 020-KHM':          'ສາຂາຄຳມ່ວນ',
-    'Rank 030-SVN':          'ສາຂາສະຫວັນນະເຂດ',
-    'Rank 040-CPS':          'ສາຂາຈຳປາສັກ',
-    'Rank 050-LPB':          'ສາຂາຫຼວງພະບາງ',
-    'Rank 060-ODX':          'ສາຂາອຸດົມໄຊ',
-    'Rank 070-LNT':          'ສາຂາຫຼວງນໍ້າທາ',
-    'Rank 080-ATP':          'ສາຂາອັດຕະປື',
-    'Rank 090-VTC':          'ສາຂານະຄອນຫຼວງວຽງຈັນ',
-    'Rank 110-BOK':          'ສາຂາບໍ່ແກ້ວ',
-    'Rank 120-XYL':          'ສາຂາໄຊຍະບູລີ',
-    'Rank 130-XKH':          'ສາຂາຊຽງຂວາງ',
-    'Rank 140-VVB':          'ສາຂາວັງວຽງ',
-    'Rank 150-BLX':          'ສາຂາບໍລິຄຳໄຊ',
-    'Rank 160-DDB':          'ສາຂາດົງໂດກ',
-    'Rank 170-HPB':          'ສາຂາຫົວພັນ',
-    'Rank 180-PSL':          'ສາຂາຜົ້ງສາລີ',
-    'Rank 190-SEK':          'ສາຂາເຊກອງ',
-    'Rank 200-SLV':          'ສາຂາສາລະວັນ',
-    'Rank 210-XSB':          'ສາຂາໄຊສົມບູນ',
-    'Rank 220-SST':          'ສາຂາໄຊເສດຖາ',
+    'Rank_Teller':   'ຈັດອັນດັບລວມ ທຄຕລ ທົ່ວລະບົບ',
+    'Rank_HV':       'ຈັດອັນດັບລວມ ພາຍໃນນະຄອນຫຼວງວຽງຈັນ',
+    'Rank_18 Oth':   'ຈັດອັນດັບລວມ ສາຂາຕ່າງແຂວງ',
+    'Rank_010':      'ສຳນັກງານໃຫ່ຍ',
+    'Rank_019':      'ສາຂາໂພນໂຮງ',
+    'Rank_020':      'ສາຂາຄຳມ່ວນ',
+    'Rank_030':      'ສາຂາສະຫວັນນະເຂດ',
+    'Rank_040':      'ສາຂາຈຳປາສັກ',
+    'Rank_050':      'ສາຂາຫຼວງພະບາງ',
+    'Rank_060':      'ສາຂາອຸດົມໄຊ',
+    'Rank_070':      'ສາຂາຫຼວງນໍ້າທາ',
+    'Rank_080':      'ສາຂາອັດຕະປື',
+    'Rank_090':      'ສາຂານະຄອນຫຼວງວຽງຈັນ',
+    'Rank_110':      'ສາຂາບໍ່ແກ້ວ',
+    'Rank_120':      'ສາຂາໄຊຍະບູລີ',
+    'Rank_130':      'ສາຂາຊຽງຂວາງ',
+    'Rank_140':      'ສາຂາວັງວຽງ',
+    'Rank_150':      'ສາຂາບໍລິຄຳໄຊ',
+    'Rank_160':      'ສາຂາດົງໂດກ',
+    'Rank_170':      'ສາຂາຫົວພັນ',
+    'Rank_180':      'ສາຂາຜົ້ງສາລີ',
+    'Rank_190':      'ສາຂາເຊກອງ',
+    'Rank_200':      'ສາຂາສາລະວັນ',
+    'Rank_210':      'ສາຂາໄຊສົມບູນ',
+    'Rank_220':      'ສາຂາໄຊເສດຖາ'
   }
-  const rankLabel = (name: string, deptName?: string | null) =>
-    rankNameLao[name] ?? (deptName ? fmtUnit(deptName) : name)
+  const rankIdLao: Record<number, string> = {
+    1: 'ຈັດອັນດັບລວມ ທຄຕລ ທົ່ວລະບົບ',
+    2: 'ຈັດອັນດັບລວມ ພາຍໃນນະຄອນຫຼວງວຽງຈັນ',
+    3: 'ຈັດອັນດັບລວມ ສາຂາຕ່າງແຂວງ',
+  }
+  const rankLabel = (name: string, deptName?: string | null, id?: number) =>
+    (id !== undefined && id <= 3 ? rankIdLao[id] : undefined) ?? rankNameLao[name] ?? (deptName ? fmtUnit(deptName) : name)
 
-  const activeLabel = activeDept?.department ?? (activeRank ? rankLabel(activeRank.group_name, activeRank.dept_name) : '')
+  const activeLabel = activeDept?.department ?? (activeRank ? rankLabel(activeRank.group_name, activeRank.dept_name, activeRank.id) : '')
 
   const handleRankClick = (view: ActiveView) => {
     setActiveView(view)
@@ -600,12 +589,10 @@ export default function PublicRankTellerPage() {
       ) / 100
     : 0
 
-  const cTotal    = useCountUp(rows.length,  0,   100)
   const cMax      = useCountUp(maxScore,      2,   150)
   const cMin      = useCountUp(minScore,      2,   200)
   const cAvg      = useCountUp(avgScore,      2,   250)
   const cPerDay   = useCountUp(scorePerDay,   2,   300)
-  const cDepts    = useCountUp(activeRank?.dept_count ?? ranks.reduce((s,r)=>s+r.dept_count,0), 0, 100)
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F6FC' }}>
@@ -638,8 +625,8 @@ export default function PublicRankTellerPage() {
 
   return (
     <>
-    {modalRow && <ScoreModal row={modalRow} onClose={() => setModalRow(null)} maxScore={maxScore} minScore={minScore} />}
-<div className="pub-page" data-theme={darkMode ? 'dark' : undefined} style={{ overflowX: 'hidden' }}>
+    {modalRow && <ScoreModal row={modalRow} onClose={() => setModalRow(null)} />}
+<div className="pub-page" style={{ overflowX: 'hidden' }}>
       {/* All styles in public-page.css */}
 
       {/* Confetti */}
@@ -686,15 +673,6 @@ export default function PublicRankTellerPage() {
           <div className="nav-live">
             <span className="dot" /> ການຈັດອັນດັບກຳລັງປະກາດ
           </div>
-          {/* Trend #3 — Dark Mode toggle */}
-          <button
-            className="dm-toggle"
-            onClick={() => setDarkMode(d => !d)}
-            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            title={darkMode ? 'Light mode' : 'Dark mode'}
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button>
         </div>
       </nav>
 
@@ -751,55 +729,63 @@ export default function PublicRankTellerPage() {
             {/* Eyebrow */}
             <div className="hero-eyebrow" style={{ marginBottom: 16 }}>
               <span style={{ color:'#F5C518', display:'flex' }}>{Ico.sparkle(12)}</span>
-              ✨ ຂໍສະແດງຄວາມຍິນດີ · ລາງວັນ 2026 ✨
+              ✨ ຜົນສະແດງພະນັກງານບໍລິການດ້ານໜ້າດີເດັ່ນ - ປະຈໍາປີ 2026 ✨
               <span style={{ color:'#F5C518', display:'flex' }}>{Ico.star(12)}</span>
             </div>
 
             {/* Title */}
-            <h1 className="hero-title" style={{ marginBottom: 4 }}>
-              ຈັດອັນດັບ <span className="latin">Teller</span>
-            </h1>
+            <h3 className="hero-title" style={{ marginBottom: 2 }}>
+              ຈັດອັນດັບ<span className="latin"> Best Teller Award</span>
+            </h3>
             <h2 className="hero-title" style={{ marginBottom: 28 }}>
-              <span className="grad-gold">ລາງວັນ </span><span className="grad-gold latin">2026</span>
+              <span className="grad-gold">ປະຈໍາປີ </span><span className="grad-gold latin">2026</span>
             </h2>
 
-            {/* Stat chips — 4 per row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', gap: 8, marginBottom: 20 }}>
-              {[
-                { icon: Ico.users(14),    val: `${rows.length} ຄົນ`,                                       accent: '#fff'    },
-                { icon: Ico.building(14), val: `${!isRankView && activeDept ? 1 : (activeRank?.dept_count ?? '—')} ສາຂາ`,  accent: '#fff'    },
-                { icon: Ico.trophy(14),   val: `ຄະແນນສູງສຸດ: ${cMax}`,                                            accent: '#F5C518' },
-                { icon: Ico.chart(14),    val: `ຄະແນນຕໍ່າສຸດ: ${cMin}`,                                           accent: 'rgba(255,255,255,.7)' },
-                { icon: Ico.chart(14),    val: `ຄະແນນສະເລ່ຍ: ${cAvg} / Teller`,                                            accent: 'rgba(255,255,255,.85)' },
-                { icon: Ico.sparkle(14),  val: `ສະເລ່ຍທຸລະກຳ / ມື້:  ${cPerDay}`,                                   accent: '#F5C518' },
-              ].map((c, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: 7,
-                  padding: '9px 18px', borderRadius: 30,
-                  background: 'rgba(255,255,255,.13)',
-                  border: '1.5px solid rgba(255,255,255,.22)',
-                  backdropFilter: 'blur(8px)',
-                  fontSize: 13, fontWeight: 700, color: '#fff',
-                  boxShadow: '0 2px 10px rgba(0,0,0,.15)',
-                  transition: '.2s',
-                }}>
-                  <span style={{ color: c.accent, display:'flex' }}>{c.icon}</span>
-                  {c.val}
-                </div>
-              ))}
+            {/* Stat cards — 1 / 2 / 3 column layout */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, alignItems: 'stretch' }}>
+              {/* Col 1 */}
+              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(235,20,20,.45)', border: '1.5px solid rgba(255,255,255,.18)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 6px rgba(0,0,0,.15)', display: 'flex', alignItems: 'center', gap: 8, minWidth: 120, height: 51 }}>
+                <span style={{ display: 'flex', flexShrink: 0, background: 'rgba(255,255,255,.9)', borderRadius: 6, padding: 4, color: '#b71113' }}>{Ico.users(14)}</span>
+                <span style={{ fontSize: 13, fontWeight: 900, color: '#fff', fontFamily: 'var(--font-lao)' }}>{rows.length} ຄົນ</span>
+              </div>
+              {/* Col 2 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {([
+                  { icon: Ico.building(14), text: `${!isRankView && activeDept ? 1 : (activeRank?.dept_count ?? '—')} ພາກສ່ວນ` },
+                  { icon: Ico.sparkle(14),  text: `ທຸລະກໍາ / ມື້ ສະເລ່ຍ ${cPerDay}` },
+                ] as const).map((c, i) => (
+                  <div key={i} style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(235,20,20,.45)', border: '1.5px solid rgba(255,255,255,.18)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 6px rgba(0,0,0,.15)', display: 'flex', alignItems: 'center', gap: 8, minWidth: 120, height: 51 }}>
+                    <span style={{ display: 'flex', flexShrink: 0, background: 'rgba(255,255,255,.9)', borderRadius: 6, padding: 4, color: '#b71113' }}>{c.icon}</span>
+                    <span style={{ fontSize: 13, fontWeight: 900, color: '#fff', fontFamily: 'var(--font-lao)' }}>{c.text}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Col 3 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {([
+                  { icon: Ico.chart(14),  text: `ຄະແນນ/ຄົນ ສະເລ່ຍ ${cAvg}` },
+                  { icon: Ico.trophy(14), text: `ຄະແນນສູງສຸດ ${cMax}`      },
+                  { icon: Ico.chart(14),  text: `ຄະແນນຕ່ຳສຸດ ${cMin}`       },
+                ] as const).map((c, i) => (
+                  <div key={i} style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(235,20,20,.45)', border: '1.5px solid rgba(255,255,255,.18)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 6px rgba(0,0,0,.15)', display: 'flex', alignItems: 'center', gap: 8, minWidth: 120, height: 51 }}>
+                    <span style={{ display: 'flex', flexShrink: 0, background: 'rgba(255,255,255,.9)', borderRadius: 6, padding: 4, color: '#b71113' }}>{c.icon}</span>
+                    <span style={{ fontSize: 13, fontWeight: 900, color: '#fff', fontFamily: 'var(--font-lao)' }}>{c.text}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Period badge */}
             {approvedPeriod && (
               <div style={{ display:'inline-flex', alignItems:'center', gap: 6, padding:'6px 14px', borderRadius:20, background:'rgba(245,197,24,.15)', border:'1.5px solid rgba(245,197,24,.35)', fontSize:12, fontWeight:700, color:'#F5C518' }}>
-                📅 {approvedPeriod} · ໄລ​ຍະທີ່ອະນຸມັດ
+                📅 {approvedPeriod} · ໄລຍະເວລາ
               </div>
             )}
           </div>
 
           {/* ── Right: trophy ── */}
           <div className="hero-trophy-panel" style={{ animation: 'fadeUp .5s .12s ease both', display:'flex', flexDirection:'column', gap: 14, alignItems:'center' }} aria-hidden="true">
-            <img src="/trophy.png" alt="Best Teller Trophy" style={{ width: 160, height: 160, objectFit: 'contain', display: 'block', animation: 'float 2.8s ease-in-out infinite', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,.35))' }} />
+            <img src="/trophy.png" alt="Best Teller Trophy" style={{ width: 180, height: 180, objectFit: 'contain', display: 'block', animation: 'float 2.8s ease-in-out infinite', filter: 'drop-shadow(0 8px 28px rgba(0,0,0,.4))' }} />
             {rows[0] && Number(rows[0].total_score) >= 100 && (
               <div style={{
                 borderRadius: 18, padding: '14px 20px', textAlign:'center', width:'100%',
@@ -829,7 +815,7 @@ export default function PublicRankTellerPage() {
             <button key={rk.id} className={`cat-tab${active ? ' on' : ''}`}
               onClick={() => handleRankClick(view)} aria-pressed={active}>
               <span style={{ display:'flex', opacity: active ? 1 : .6 }}>{Ico.trophy(14)}</span>
-              {rankLabel(rk.group_name, rk.dept_name)}
+              {rankLabel(rk.group_name, rk.dept_name, rk.id)}
               {/* <span className="cat-badge">{rk.dept_count}</span> */}
             </button>
           )
@@ -845,7 +831,7 @@ export default function PublicRankTellerPage() {
             setActiveView('by_dept')
           }}>
           <span style={{ display:'flex', opacity: activeView === 'by_dept' ? 1 : .6 }}>{Ico.building(14)}</span>
-          ຈັດອັນດັບ ແຍກເແຕ່ລະພາກສ່ວນ
+          ຈັດອັນດັບ ແຍກເປັນແຕ່ລະພາກສ່ວນ
         </button>
 
       </nav>
@@ -857,7 +843,7 @@ export default function PublicRankTellerPage() {
 
             {/* Header */}
             <div style={{ background:'linear-gradient(135deg,#b71113,#8a0c0d)', padding:'20px 24px 18px', position:'relative', borderBottom:'3px solid #D4A017' }}>
-              <div style={{ fontSize:18, fontWeight:900, color:'#fff' }}>ສູດຄຳນວນຄະແນນ Teller</div>
+              <div style={{ fontSize:18, fontWeight:900, color:'#fff' }}>ການກໍານົດເງື່ອນໄຂໃຫ້ຄະແນນ</div>
               <div style={{ fontSize:12, color:'rgba(255,255,255,.65)', marginTop:4 }}>BCEL Best Teller Award 2026</div>
               <button onClick={() => setShowFormula(false)} style={{ position:'absolute', top:14, right:14, zIndex:2, background:'rgba(255,255,255,.18)', border:'1px solid rgba(255,255,255,.25)', borderRadius:8, width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -868,20 +854,20 @@ export default function PublicRankTellerPage() {
 
               {/* Formula summary */}
               <div style={{ background:'linear-gradient(135deg,#FFF8E0,#FFF3CC)', border:'2px solid #F5C518', borderRadius:16, padding:'14px 18px', marginBottom:20, textAlign:'center' }}>
-                <div style={{ fontSize:11, fontWeight:800, letterSpacing:'1.5px', color:'#A07000', marginBottom:8, textTransform:'uppercase' }}>ຄະແນນລວມ (Total Score)</div>
+                <div style={{ fontSize:11, fontWeight:800, letterSpacing:'1.5px', color:'#A07000', marginBottom:8, textTransform:'uppercase' }}>ຄະແນນລວມ (TOTAL SCORE)</div>
                 <div style={{ fontSize:13, fontWeight:700, color:'#7A5000', lineHeight:1.8, fontFamily:"'Noto Sans Lao',serif" }}>
-                  = ຄ.ທຸລະກໍາ (70%) + ຄ.ຜິດພາດ (20%) + ຄ.ວິໄນ (10%)<br/>
-                  + ໂບນັດຕ່າງໆ (ສູງສຸດ +15)
+                  = ຄະແນນລວມທຸລະກໍາ (70%) + ຄວາມຜິດທາງບັນຊີ (20%) + ການ<br/>
+                    ປະຕິບັດໂມງເວລາປະຈໍາການ (10%) + ຄະແນນພິເສດ (15%)
                 </div>
               </div>
 
               {/* Main components */}
-              <div style={{ fontSize:13, fontWeight:800, color:'#838380', letterSpacing:'.5px', marginBottom:10, textTransform:'uppercase' }}>ສ່ວນປະກອບຫຼັກ</div>
+              <div style={{ fontSize:13, fontWeight:800, color:'#838380', letterSpacing:'.5px', marginBottom:10, textTransform:'uppercase' }}>ການຖ່ວງນໍ້າໜັກ</div>
               <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
                 {[
-                  { label:'ຄະແນນທຸລະກໍາ', weight:'70%', color:'#F59E0B', bg:'#FFFBEB', desc:'ຄຳນວນຈາກ ຈຳນວນທຸລະກໍາ / ວັນ ທຽບກັບຄ່າສະເລ່ຍ' },
-                  { label:'ຄະແນນຜິດພາດ Rev+Cor', weight:'20%', color:'#b71113', bg:'#FFF1F2', desc:'ຫັກຕາມຈຳນວນ Reverse ແລະ Recor ທີ່ເກີດຂຶ້ນ' },
-                  { label:'ຄະແນນວິໄນ', weight:'10%', color:'#10B981', bg:'#ECFDF5', desc:'ຕາມວິໄນ ການເຂົ້າ-ອອກວຽກ ແລະ ພຶດຕິກໍາ' },
+                  { label:'ຄະແນນລວມທຸລະກໍາ', weight:'70%', color:'#F59E0B', bg:'#FFFBEB', desc:'ຄະແນນລວມຈໍານວນທຸລະກໍາ + ຂາຍຜະລິດຕະພັນ ຜ່ານເຄົາເຕີ ທັງໝົດ: ຖ່ວງນໍ້າໜັກ  70% ຫຼື ເທົ່າກັບຄະແນນສູງສຸດ 70 ຄະແນນ' },
+                  { label:'ຄະແນນຄວາມຜິດທາງບັນຊີ', weight:'20%', color:'#b71113', bg:'#FFF1F2', desc:'ຄະແນນຄ່າສະເລ່ຍລາຍການ Reverse + Cor: ຖ່ວງນໍ້າໜັກ 20% ຫຼື ເທົ່າກັບຄະແນນສູງສຸດ 20 ຄະແນນ' },
+                  { label:'ຄະແນນປະຕິບັດໂມງເວລາ', weight:'10%', color:'#10B981', bg:'#ECFDF5', desc:'ຄະແນນຈໍານວນຄັ້ງການປະຕິບັດໂມງເວລາປະຈໍາການ: ຖ່ວງນໍ້າໜັກ 10% ຫຼື ເທົ່າກັບຄະແນນສູງສຸດ 10 ຄະແນນ' },
                 ].map((c, i) => (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:12, background:c.bg, border:`1.5px solid ${c.color}22` }}>
                     <div style={{ flexShrink:0, minWidth:52, padding:'4px 8px', borderRadius:8, background:c.color, color:'#fff', fontSize:13, fontWeight:900, textAlign:'center' }}>{c.weight}</div>
@@ -894,31 +880,49 @@ export default function PublicRankTellerPage() {
               </div>
 
               {/* Bonus components */}
-              <div style={{ fontSize:13, fontWeight:800, color:'#838380', letterSpacing:'.5px', marginBottom:10, textTransform:'uppercase' }}>ໂບນັດ (Bonus)</div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:20 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:'#838380', letterSpacing:'.5px', marginBottom:10, textTransform:'uppercase' }}>ຄະແນນພິເສດ</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
                 {[
-                  { label:'ເກີນຄ່າສະເລ່ຍ', bonus:'+5',   color:'#06B6D4', desc:'ທຸລະກໍາ / ມື້ ສູງກວ່າຄ່າສະເລ່ຍ' },
-                  { label:'ໂບນັດ Reverse',  bonus:'+2.5', color:'#F97316', desc:'ບໍ່ມີ Reverse transactions' },
-                  { label:'ໂບນັດ ReCor',    bonus:'+2.5', color:'#EC4899', desc:'ບໍ່ມີ Recorrection' },
-                  { label:'ໂບນັດ ເຂົ້າວຽກ', bonus:'+5',   color:'#8B5CF6', desc:'ເຂົ້າວຽກຄົບ ບໍ່ຂາດ-ສາຍ' },
+                  { label:'ຄະແນນລວມທຸລະກໍາທຳຄ່າສະເລ່ຍ',         bonus:'+5', color:'#F97316', desc:'ຈໍານວນຄະແນນທຸລະກໍາ / ປີ ສູງກວ່າຄ່າສະເລ່ຍ ນັບແຕ່ 200% ຂຶ້ນໄປແມ່ນຈະບວກເພີ່ມຄະແນນພິເສດໃຫ້ສູງສຸດ +5 ຄະແນນ' },
+                  { label:'ຄະແນນບໍ່ມີລາຍການຄວາມຜິດທາງບັນຊີ',    bonus:'+5', color:'#F97316', desc:'ກໍລະນີພະນັກງານທີ່ບໍ່ມີລາຍການ Reverse + Cor = 0 ລາຍການ ຈະບວກເພີ່ມຄະແນນພິເສດສູງສຸດ +5 ຄະແນນ (Reverse +2.5 / Cor +2.5)' },
+                  { label:'ຄະແນນບໍ່ມາການຊ້າ ຫຼື ກັບໄວ',           bonus:'+5', color:'#F97316', desc:'ກໍລະນີພະນັກງານປະຕິບັດຕາມໂມງເວລາປະຈໍາການໄດ້ (ບໍ່ມີການມາຊ້າ+ກັບໄວ) = 0 ຄັ້ງ ຈະບວກເພີ່ມຄະແນນພິເສດສູງສຸດ +5 ຄະແນນ' },
                 ].map((b, i) => (
-                  <div key={i} style={{ padding:'10px 14px', borderRadius:12, background:'#F8F9FC', border:'1.5px solid #E8EBF5' }}>
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
-                      <div style={{ fontSize:12, fontWeight:800, color:'#0A1628' }}>{b.label}</div>
-                      <div style={{ fontSize:14, fontWeight:900, color:b.color }}>{b.bonus}</div>
+                  <div key={i} style={{ display:'flex', gap:12, padding:'12px 14px', borderRadius:12, background:'#FFF8F2', border:'1.5px solid #F9731622' }}>
+                    <div style={{ flexShrink:0, width:40, height:40, borderRadius:10, background:'#F97316', color:'#fff', fontSize:13, fontWeight:900, display:'flex', alignItems:'center', justifyContent:'center' }}>{b.bonus}</div>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontSize:12, fontWeight:800, color:'#0A1628', marginBottom:3 }}>{b.label}</div>
+                      <div style={{ fontSize:11, color:'#838380', lineHeight:1.5 }}>{b.desc}</div>
                     </div>
-                    <div style={{ fontSize:11, color:'#838380' }}>{b.desc}</div>
                   </div>
                 ))}
               </div>
 
               {/* Award threshold */}
-              <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:12, background:'linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,140,0,.1))', border:'1.5px solid rgba(212,160,23,.4)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:12, background:'linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,140,0,.1))', border:'1.5px solid rgba(212,160,23,.4)', marginBottom:20 }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A017" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 18v-2h-.5"/></svg>
                 <div>
-                  <div style={{ fontSize:13, fontWeight:800, color:'#A07000' }}>ເກນລາງວັນດີເດັ່ນ</div>
-                  <div style={{ fontSize:12, color:'#7A5000', marginTop:2 }}>ຄະແນນລວມ <strong>≥ 100</strong> ຄະແນນ — ໄດ້ຮັບ ລາງວັນ Best Teller Award</div>
+                  <div style={{ fontSize:13, fontWeight:800, color:'#A07000' }}>ເກນຄະແນນທີ່ຈະໄດ້ຮັບຄັດເລືອກເປັນ</div>
+                  <div style={{ fontSize:12, color:'#7A5000', marginTop:2 }}>ພະນັກງານບໍລິການດ້ານໜ້າດີເດັ່ນ ຕ້ອງມີຄະແນນລວມທັງໝົດ<strong> ≥ 100</strong> ຄະແນນ ຂຶ້ນໄປ</div>
                 </div>
+              </div>
+
+              {/* master_rank calculation groups */}
+              <div style={{ fontSize:13, fontWeight:800, color:'#838380', letterSpacing:'.5px', marginBottom:10, textTransform:'uppercase' }}>ການແບ່ງກຸ່ມຈັດອັນດັບ Best Teller Award</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {[
+                  { id:'1', label:'ຈັດອັນດັບລວມ ທຄຕລ ທົ່ວລະບົບ',          desc:'ລວມມີ ສູນບໍລິການ + ພະແນກການຕະຫຼາດ ແລະ ບໍລິການລູກຄ້າລາຍໃຫຍ່ + 21 ສາຂາ ທົ່ວລະບົບ',          color:'#b71113', bg:'#FFF1F2' },
+                  { id:'2', label:'ຈັດອັນດັບລວມ ພາຍໃນນະຄອນຫຼວງວຽງຈັນ',        desc:'ລວມມີ ສູນບໍລິການ + ພະແນກການຕະຫຼາດ ແລະ ບໍລິການລູກຄ້າລາຍໃຫຍ່ + 3 ສາຂາ ໃນນະຄອນຫຼວງວຽງຈັນ',               color:'#2563EB', bg:'#EFF6FF' },
+                  { id:'3', label:'ຈັດອັນດັບລວມ ສາຂາຕ່າງແຂວງ',        desc:'ລວມມີ 18 ສາຂາ ທີ່ຕັ້ງຢູ່ຕ່າງແຂວງ',              color:'#059669', bg:'#ECFDF5' },
+                  { id:'4+', label:'ຈັດອັນດັບ ແຍກເປັນແຕ່ລະພາກສ່ວນ', desc:'ລວມມີ 1 ສໍານັກງານໃຫຍ່ (ສູນບໍລິການ + ພະແນກການຕະຫຼາດ ແລະ ບໍລິການລູກຄ້າລາຍໃຫຍ່) ແລະ 21 ສາຂາ ທຄຕລ ທົ່ວລະບົບ',  color:'#7C3AED', bg:'#F5F3FF' },
+                ].map((g, i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'10px 14px', borderRadius:12, background:g.bg, border:`1.5px solid ${g.color}22` }}>
+                    <div style={{ flexShrink:0, minWidth:34, padding:'3px 6px', borderRadius:8, background:g.color, color:'#fff', fontSize:12, fontWeight:900, textAlign:'center', marginTop:1 }}>{g.id}</div>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:800, color:'#0A1628' }}>{g.label}</div>
+                      <div style={{ fontSize:11, color:'#838380', marginTop:2 }}>{g.desc}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
             </div>
@@ -935,7 +939,7 @@ export default function PublicRankTellerPage() {
           <div style={{ marginBottom: 48 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
               <div style={{ width: 4, height: 22, background: 'var(--red)', borderRadius: 2 }} />
-              <span style={{ fontSize: 20, fontWeight: 900, color: '#0A1628', fontFamily: 'var(--font-lao)' }}>5 ອັນດັບຕົ້ນ</span>
+              <span style={{ fontSize: 20, fontWeight: 900, color: '#0A1628', fontFamily: 'var(--font-lao)' }}>5 ອັນດັບທໍາອິດ</span>
               {activeLabel && <span style={{ fontSize: 13, color: '#8A9BB8', fontWeight: 600 }}>{activeLabel}</span>}
               <button
                 onClick={() => setShowFormula(true)}
@@ -945,7 +949,7 @@ export default function PublicRankTellerPage() {
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(183,17,19,.06)' }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                ສູດຄະແນນ
+                ລາຍລະອຽດ
               </button>
             </div>
 
@@ -957,7 +961,6 @@ export default function PublicRankTellerPage() {
                 const isFirst  = origIdx === 0
                 const platH    = [300, 200, 160, 120, 90][origIdx]
                 const numColor = ['rgba(255,215,0,.95)','rgba(255,255,255,.9)','rgba(255,255,255,.85)','rgba(255,255,255,.8)','rgba(255,255,255,.75)'][origIdx]
-                const trophySz = isFirst ? 72 : origIdx <= 2 ? 48 : 36
                 const avatarSz = isFirst ? 80 : origIdx <= 2 ? 60 : 48
                 const nameSz   = isFirst ? 20 : origIdx <= 2 ? 15 : 13
                 const scoreSz  = isFirst ? 42 : origIdx <= 2 ? 26 : 20
@@ -971,16 +974,10 @@ export default function PublicRankTellerPage() {
                     {/* ── Floating content above platform (no card) ── */}
                     <div style={{ width: '100%', padding: '0 8px 12px', textAlign: 'center', animation: `fadeUp .4s ${col*.08}s ease both` }}>
 
-                      {/* Trophy — all red */}
-                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, animation: `float ${isFirst?2.8:3.6}s ease-in-out infinite`, animationDelay: `${origIdx*.35}s` }}>
-                        <div style={{ color: '#b71113', filter: 'drop-shadow(0 4px 14px rgba(183,17,19,.35))' }}>
-                          {Ico.trophy(trophySz)}
-                        </div>
-                      </div>
 
                       {/* Profile photo — all red */}
                       <div style={{ position: 'relative', width: avatarSz, height: avatarSz, margin: '0 auto 10px' }}>
-                        <EmpPhoto fingerCode={r.finger_code} name={r.fullname} size={avatarSz} border="3px solid #fff" shadow="0 2px 8px rgba(0,0,0,.15)" />
+                        <EmpPhoto fingerCode={r.finger_code} name={r.fullname} size={avatarSz} border="3px solid #fff" shadow="0 2px 8px rgba(0,0,0,.15)" onZoom={(src) => setZoomData({ src, row: r })} />
                         <div style={{ position: 'absolute', inset: -3, borderRadius: '50%', border: '2px solid rgba(183,17,19,.25)', pointerEvents: 'none' }} />
                       </div>
 
@@ -1039,19 +1036,20 @@ export default function PublicRankTellerPage() {
           const deptPgCount = Math.max(1, Math.ceil(rows.length / DEPT_PAGE_SIZE))
           const deptPage    = Math.min(page, deptPgCount)
           const deptRows    = rows.slice((deptPage - 1) * DEPT_PAGE_SIZE, deptPage * DEPT_PAGE_SIZE)
-          const deptLabel   = activeDept?.department ?? activeLabel
+          const deptLabel   = activeDept?.department ?? ''
+
           return (
             <div>
               {/* ── Rank group selector (master_rank id > 3) ── */}
               <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #E8EBF5', padding: '14px 18px', marginBottom: 20, boxShadow: '0 2px 10px rgba(30,50,100,.06)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
                   <span style={{ color: '#b71113', display: 'flex' }}>{Ico.trophy(16)}</span>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: '#1A2340' }}>ເລືອກໝວດ</span>
-                  <span style={{ fontSize: 12, color: '#838380', fontWeight: 600 }}>{ranks.filter(r => r.id > 3).length} ໝວດ</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#1A2340' }}>ພາກສ່ວນ</span>
+                  <span style={{ fontSize: 12, color: '#838380', fontWeight: 600 }}>{ranks.filter(r => r.id > 3).length}</span>
                   <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     {byDeptRankId !== null && (
                       <span style={{ padding: '3px 12px', borderRadius: 20, background: 'rgba(183,17,19,.06)', color: '#b71113', fontSize: 12, fontWeight: 700 }}>
-                        {rankLabel(ranks.find(r => r.id === byDeptRankId)?.group_name ?? '', ranks.find(r => r.id === byDeptRankId)?.dept_name)} · {rows.length} ຄົນ
+                        {rankLabel(ranks.find(r => r.id === byDeptRankId)?.group_name ?? '', ranks.find(r => r.id === byDeptRankId)?.dept_name, byDeptRankId ?? undefined)} · {rows.length} ຄົນ
                       </span>
                     )}
                     {selectedPeriod && (
@@ -1074,7 +1072,7 @@ export default function PublicRankTellerPage() {
                         color:       active ? '#fff' : '#6878A0',
                         boxShadow:   active ? '0 2px 8px rgba(200,0,30,.25)' : '0 1px 3px rgba(0,0,0,.05)',
                       }}>
-                        {rankLabel(rk.group_name, rk.dept_name)}
+                        {rankLabel(rk.group_name, rk.dept_name, rk.id)}
                         <span style={{ fontSize: 12, opacity: .75, marginLeft: 4 }}>({rk.dept_count})</span>
                       </button>
                     )
@@ -1106,15 +1104,9 @@ export default function PublicRankTellerPage() {
 
                           {/* Content above platform — same style as main rank */}
                           <div style={{ width: '100%', padding: '0 8px 12px', textAlign: 'center', animation: `fadeUp .4s ${col*.08}s ease both` }}>
-                            {/* Trophy — red */}
-                            <div style={{ display:'flex', justifyContent:'center', marginBottom:8, animation:`float ${isFirst?2.8:3.6}s ease-in-out infinite`, animationDelay:`${origIdx*.35}s` }}>
-                              <div style={{ color: '#b71113', filter:'drop-shadow(0 4px 14px rgba(183,17,19,.35))' }}>
-                                {Ico.trophy(isFirst ? 72 : 52)}
-                              </div>
-                            </div>
-                            {/* Profile photo */}
+                              {/* Profile photo */}
                             <div style={{ position:'relative', width:avatarSz, height:avatarSz, margin:'0 auto 10px' }}>
-                              <EmpPhoto fingerCode={r.finger_code} name={r.fullname} size={avatarSz} border="3px solid #fff" shadow="0 2px 8px rgba(0,0,0,.15)" />
+                              <EmpPhoto fingerCode={r.finger_code} name={r.fullname} size={avatarSz} border="3px solid #fff" shadow="0 2px 8px rgba(0,0,0,.15)" onZoom={(src) => setZoomData({ src, row: r })} />
                               <div style={{ position:'absolute', inset:-3, borderRadius:'50%', border:'2px solid rgba(183,17,19,.25)', pointerEvents:'none' }} />
                             </div>
                             {/* Name */}
@@ -1161,6 +1153,16 @@ export default function PublicRankTellerPage() {
                 <span style={{ color:'#b71113', display:'flex' }}>{Ico.table(16)}</span>
                 <span style={{ fontSize:14, fontWeight:800, color:'#1A2340' }}>ຄະແນນທັງໝົດ · {deptLabel}</span>
                 <span style={{ fontSize:11, color:'#8A9BB8' }}>{rows.length} ຄົນ</span>
+                <button
+                  onClick={() => setShowFormula(true)}
+                  title="ສູດຄຳນວນຄະແນນ"
+                  style={{ marginLeft: 4, display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:16, border:'1.5px solid rgba(183,17,19,.22)', background:'rgba(183,17,19,.06)', color:'#b71113', fontSize:12, fontWeight:700, cursor:'pointer', transition:'.15s', flexShrink:0 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(183,17,19,.14)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(183,17,19,.06)' }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  ລາຍລະອຽດ
+                </button>
               </div>
               <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #E8EBF5', overflow: 'hidden', boxShadow: '0 2px 16px rgba(30,50,100,.07)' }}>
                 <div style={{ overflowX: 'auto' }}>
@@ -1187,8 +1189,6 @@ export default function PublicRankTellerPage() {
                         const isTop5     = globalIdx < 5 && isReward
                         const MedalSvg   = isTop3 ? MEDAL_SVGS[Math.min(globalIdx, 2)] : null
                         const scoreColor = isTop3 ? M_COLOR[Math.min(globalIdx,2)] : isReward ? '#B07800' : '#b71113'
-                        const avatarBg   = isTop3 ? M_COLOR[Math.min(globalIdx,2)] : isReward ? '#B07800' : '#6878A0'
-                        const initial    = r.fullname?.charAt(0)?.toUpperCase() ?? '?'
                         const maxSc      = rows.length ? Math.max(...rows.map(x => Number(x.total_score))) : 1
                         const pct        = maxSc > 0 ? (Number(r.total_score) / maxSc * 100) : 0
                         const barGrad    = isTop3 ? `linear-gradient(90deg,${M_RING[Math.min(globalIdx,2)]},${M_COLOR[Math.min(globalIdx,2)]})` : isReward ? 'linear-gradient(90deg,#D4A017,#FFB800)' : 'linear-gradient(90deg,#b71113,#d93032)'
@@ -1213,7 +1213,7 @@ export default function PublicRankTellerPage() {
                             {/* Name + avatar */}
                             <td style={{ padding: '12px 12px' }}>
                               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                                <EmpPhoto fingerCode={r.finger_code} name={r.fullname} size={38} border="2px solid #fff" shadow="0 1px 4px rgba(0,0,0,.12)" />
+                                <EmpPhoto fingerCode={r.finger_code} name={r.fullname} size={38} border="2px solid #fff" shadow="0 1px 4px rgba(0,0,0,.12)" onZoom={(src) => setZoomData({ src, row: r })} />
                                 <div style={{ minWidth:0 }}>
                                   <div style={{ fontWeight:700, color:'#0A1628', fontSize:13, lineHeight:1.3 }}>{r.fullname}</div>
                                   <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
@@ -1306,8 +1306,8 @@ export default function PublicRankTellerPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(200,0,30,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b71113' }}>{Ico.table(20)}</div>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#1A2340' }}>ຕາຕະລາງຄະແນນທັງໝົດ</div>
-              <div style={{ fontSize: 12, color: '#838380', marginTop: 1, fontWeight: 600 }}>{rows.length} ຄົນ{activeRank ? ` · ${rankLabel(activeRank.group_name, activeRank.dept_name)}` : ' · ທັງໝົດ'}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#1A2340' }}>ຕາຕະລາງຈັດອັນດັບ</div>
+              <div style={{ fontSize: 12, color: '#838380', marginTop: 1, fontWeight: 600 }}>{rows.length} ຄົນ{activeRank ? ` · ${rankLabel(activeRank.group_name, activeRank.dept_name, activeRank.id)}` : ' * ຈັດອັນດັບລວມ ທຄຕລ ທົ່ວລະບົບ'}</div>
             </div>
           </div>
           {/* Search — near table */}
@@ -1355,12 +1355,12 @@ export default function PublicRankTellerPage() {
               <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
                 <tr>
                   {[
-                    { label: 'ລ/ດ',              align: 'center' },
-                    { label: 'ຊື່ - ນາມສະກຸນ', align: 'left'   },
-                    { label: 'ຂະແໜງ / ໜວ່ຍ',           align: 'left'   },
-                    { label: 'ສາຂາ / ພະແນກ',   align: 'left'   },
+                    { label: 'ລໍາດັບ',             align: 'center' },
+                    { label: 'ຊື່ ແລະ ນາມສະກຸນ',   align: 'left'   },
+                    { label: 'ຂະແໜງ/ໜ່ວຍບໍລິການ', align: 'left'   },
+                    { label: 'ສູນ/ພະແນກ/ສາຂາ',   align: 'left'   },
                     { label: 'ຄະແນນລວມ',        align: 'right'  },
-                    { label: '',               align: 'center' },
+                    { label: 'ໝາຍເຫດ',          align: 'center' },
                   ].map((c, i) => (
                     <th key={i} style={{
                       padding: '13px 16px',
@@ -1382,19 +1382,12 @@ export default function PublicRankTellerPage() {
                   const isTop5     = r.no <= 5 && isCentury
                   const idx        = r.no - 1
                   const MedalSvg   = isTop3 ? MEDAL_SVGS[Math.min(idx, 2)] : null
-                  const prevCentury = i > 0 ? Number(pageRows[i-1].total_score) >= 100 : null
-                  const initial    = r.fullname?.charAt(0)?.toUpperCase() ?? '?'
-                  const avatarBg   = isTop3 ? M_COLOR[idx] : isCentury ? '#B07800' : '#6878A0'
                   const scoreColor = isTop3 ? M_COLOR[idx] : isCentury ? '#B07800' : '#b71113'
                   const barGrad    = isTop3
                     ? `linear-gradient(90deg,${M_RING[idx]},${M_COLOR[idx]})`
                     : isCentury ? 'linear-gradient(90deg,#D4A017,#FFB800)'
                     : 'linear-gradient(90deg,#b71113,#d93032)'
                   const rowBg      = isTop3 ? `${M_RING[idx]}0D` : isCentury ? 'rgba(212,160,23,.03)' : undefined
-
-                  // Section headers
-                  const showAwardHeader  = isCentury  && (i === 0 || prevCentury === false)
-                  const showOtherHeader  = !isCentury && prevCentury === true
 
                   return (
                     <React.Fragment key={r.user_id}>
@@ -1426,7 +1419,7 @@ export default function PublicRankTellerPage() {
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           {/* Avatar */}
-                          <EmpPhoto fingerCode={r.finger_code} name={r.fullname} size={40} border="2px solid #fff" shadow="0 1px 4px rgba(0,0,0,.12)" />
+                          <EmpPhoto fingerCode={r.finger_code} name={r.fullname} size={40} border="2px solid #fff" shadow="0 1px 4px rgba(0,0,0,.12)" onZoom={(src) => setZoomData({ src, row: r })} />
                           <div style={{ minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span style={{ fontWeight: 700, color: '#0A1628', fontSize: 13.5, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>{r.fullname}</span>
@@ -1543,6 +1536,63 @@ export default function PublicRankTellerPage() {
         </div>
       </footer>
     </div>
+
+    {/* ── Photo zoom lightbox ── */}
+    {zoomData && (() => {
+      const { src, row } = zoomData
+      return (
+        <div
+          onClick={() => setZoomData(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,.72)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'zoom-out', animation: 'fadeIn .18s ease',
+            padding: 16,
+          }}
+        >
+          {/* Card */}
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#fff', borderRadius: 20, overflow: 'hidden',
+              width: 'min(340px, 92vw)', boxShadow: '0 20px 80px rgba(0,0,0,.5)',
+              animation: 'scaleIn .22s cubic-bezier(.34,1.56,.64,1)',
+              cursor: 'default',
+            }}
+          >
+            {/* Big photo */}
+            <div style={{ position: 'relative', width: '100%', background: '#111' }}>
+              <img
+                src={src}
+                alt={row.fullname}
+                style={{ width: '100%', height: 'auto', maxHeight: '70vh', objectFit: 'contain', display: 'block' }}
+              />
+              {/* Gradient overlay at bottom */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '65%', background: 'linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.4) 60%, transparent 100%)', pointerEvents: 'none' }} />
+              {/* Name + ID + info over photo */}
+              <div style={{ position: 'absolute', bottom: 14, left: 16, right: 16 }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', fontFamily: 'var(--font-lao)', lineHeight: 1.3, textShadow: '0 1px 4px rgba(0,0,0,.4)' }}>{row.fullname}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', marginTop: 2, fontFamily: 'Vidaloka' }}>{row.user_id}</div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={() => setZoomData(null)}
+            style={{
+              position: 'absolute', top: 20, right: 20,
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'rgba(255,255,255,.15)', border: 'none',
+              color: '#fff', fontSize: 20, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >×</button>
+        </div>
+      )
+    })()}
     </>
   )
 }
