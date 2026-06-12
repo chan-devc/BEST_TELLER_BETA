@@ -336,7 +336,7 @@ function ScoreModal({ row, onClose }: {
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.5px', color: '#838380', marginBottom: 8, fontFamily: 'var(--font-lao)' }}>ຂໍ້ມູນທຸລະກໍາ</div>
             <div style={{ display: 'flex', gap: 8 }}>
               {statCard('ລວມທຸລະກໍາ',    fmt(Number(row.txn_score)),      '#6366F1')}
-              {statCard('ສະເລ່ຍທຸລະກໍາ/ມື້',  fmt(Number(row.pro_score)),      '#0EA5E9', `${row.day_of_work} ມື້`)}
+              {statCard('ສະເລ່ຍທຸລະກໍາ/ມື້',  fmt(Number(row.txn_count)),      '#0EA5E9', `${row.day_of_work} ມື້`)}
             </div>
           </div>
 
@@ -347,7 +347,7 @@ function ScoreModal({ row, onClose }: {
             {/* Row 1: ທຸລະກໍາ */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
               {([
-                { label: 'ຄະແນນທຸລະກໍາ',       value: row.pro_score,          color: '#F59E0B', bg: '#F8F9FC' },
+                { label: 'ຄະແນນທຸລະກໍາ',       value: row.weight_txn,          color: '#F59E0B', bg: '#F8F9FC' },
                 { label: 'ຄະແນນເກີນຄ່າສະເລ່ຍ', value: row.txn_over_avg_score, color: '#06B6D4', bg: '#F0FBFF' },
               ] as const).map(s => (
                 <div key={s.label} style={{ padding: '10px 12px', borderRadius: 11, background: s.bg, border: `1px solid ${s.color}22`, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -529,6 +529,7 @@ export default function PublicRankTellerPage() {
   const top3      = rows.filter(r => Number(r.total_score) >= 100).slice(0, 5)
   const maxScore  = rows.length ? Math.max(...rows.map(r => Number(r.total_score))) : 0
   const avgScore  = rows.length ? rows.reduce((a, r) => a + Number(r.total_score), 0) / rows.length : 0
+  const avgTxn_day  = rows.length ? rows.reduce((a, r) => a + Number(r.txn_count), 0) / rows.length : 0
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
   const pageRows  = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
@@ -580,15 +581,12 @@ export default function PublicRankTellerPage() {
   }
 
   const minScore  = rows.length ? Math.min(...rows.map(r => Number(r.total_score))) : 0
+  // console.log(rows)
   // AVG(total_score / day_of_work) per teller
   const validRows   = rows.filter(r => (Number(r.day_of_work) || 0) > 0)
-  const scorePerDay = validRows.length > 0
-    ? Math.round(
-        (validRows.reduce((s, r) => s + Number(r.total_score) / Number(r.day_of_work), 0)
-        / validRows.length) * 100
-      ) / 100
-    : 0
-
+  const scorePerDay = avgTxn_day
+  
+    // console.log(validRows)
   const cMax      = useCountUp(maxScore,      2,   150)
   const cMin      = useCountUp(minScore,      2,   200)
   const cAvg      = useCountUp(avgScore,      2,   250)
@@ -689,7 +687,7 @@ export default function PublicRankTellerPage() {
                 <span key={copy} style={{ display: 'inline-flex', alignItems: 'center' }}>
                   {(announcements.length > 0
                     ? announcements
-                    : [{ id: 0, title_lo: 'ຂໍສະແດງຄວາມຍິນດີ · ລາງວັນ Teller ດີເດັ່ນ 2026 · BCEL', title_en: null, tag: 'new' }]
+                    : [{ id: 0, title_lo: 'ຂໍສະແດງຄວາມຍິນດີ · ພະນັກງານບໍລິການດ້ານໜ້າດີເດັ່ນ 2026', title_en: null, tag: 'new' }]
                   ).map((a, ai) => (
                     <span key={`a${ai}`}>📣 {a.title_lo} &nbsp;·&nbsp; </span>
                   ))}
@@ -883,9 +881,9 @@ export default function PublicRankTellerPage() {
               <div style={{ fontSize:13, fontWeight:800, color:'#838380', letterSpacing:'.5px', marginBottom:10, textTransform:'uppercase' }}>ຄະແນນພິເສດ</div>
               <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
                 {[
-                  { label:'ຄະແນນລວມທຸລະກໍາທຳຄ່າສະເລ່ຍ',         bonus:'+5', color:'#F97316', desc:'ຈໍານວນຄະແນນທຸລະກໍາ / ປີ ສູງກວ່າຄ່າສະເລ່ຍ ນັບແຕ່ 200% ຂຶ້ນໄປແມ່ນຈະບວກເພີ່ມຄະແນນພິເສດໃຫ້ສູງສຸດ +5 ຄະແນນ' },
-                  { label:'ຄະແນນບໍ່ມີລາຍການຄວາມຜິດທາງບັນຊີ',    bonus:'+5', color:'#F97316', desc:'ກໍລະນີພະນັກງານທີ່ບໍ່ມີລາຍການ Reverse + Cor = 0 ລາຍການ ຈະບວກເພີ່ມຄະແນນພິເສດສູງສຸດ +5 ຄະແນນ (Reverse +2.5 / Cor +2.5)' },
-                  { label:'ຄະແນນບໍ່ມາການຊ້າ ຫຼື ກັບໄວ',           bonus:'+5', color:'#F97316', desc:'ກໍລະນີພະນັກງານປະຕິບັດຕາມໂມງເວລາປະຈໍາການໄດ້ (ບໍ່ມີການມາຊ້າ+ກັບໄວ) = 0 ຄັ້ງ ຈະບວກເພີ່ມຄະແນນພິເສດສູງສຸດ +5 ຄະແນນ' },
+                  { label:'ຄະແນນລວມທຸລະກໍາເກີນຄ່າສະເລ່ຍ',         bonus:'5%', color:'#F97316', desc:'ຈໍານວນຄະແນນທຸລະກໍາເກີນຄ່າສະເລ່ຍ ຫຼື ຄ່າກາງ ນັບແຕ່ 200% ຂຶ້ນໄປແມ່ນຈະບວກເພີ່ມຄະແນນພິເສດໃຫ້ສູງສຸດ +5 ຄະແນນ' },
+                  { label:'ຄະແນນບໍ່ມີລາຍການຄວາມຜິດທາງບັນຊີ',    bonus:'5%', color:'#F97316', desc:'ກໍລະນີພະນັກງານທີ່ບໍ່ມີລາຍການ Reverse + Cor = 0 ລາຍການ ຈະບວກເພີ່ມຄະແນນພິເສດສູງສຸດ +5 ຄະແນນ (Reverse +2.5 / Cor +2.5)' },
+                  { label:'ຄະແນນບໍ່ມາການຊ້າ ຫຼື ກັບໄວ',           bonus:'5%', color:'#F97316', desc:'ກໍລະນີພະນັກງານປະຕິບັດຕາມໂມງເວລາປະຈໍາການໄດ້ (ບໍ່ມີການມາຊ້າ+ກັບໄວ) = 0 ຄັ້ງ ຈະບວກເພີ່ມຄະແນນພິເສດສູງສຸດ +5 ຄະແນນ' },
                 ].map((b, i) => (
                   <div key={i} style={{ display:'flex', gap:12, padding:'12px 14px', borderRadius:12, background:'#FFF8F2', border:'1.5px solid #F9731622' }}>
                     <div style={{ flexShrink:0, width:40, height:40, borderRadius:10, background:'#F97316', color:'#fff', fontSize:13, fontWeight:900, display:'flex', alignItems:'center', justifyContent:'center' }}>{b.bonus}</div>
@@ -1231,7 +1229,7 @@ export default function PublicRankTellerPage() {
                             {/* Sector */}
                             <td style={{ padding: '12px 12px' }}>
                               {r.sector
-                                ? <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'3px 9px', borderRadius:7, background:'#F0F4FF', color:'#4A6AC8', fontSize:11, fontWeight:600, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                ? <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'3px 9px', borderRadius:7, background:'#F0F4FF', color:'#4A6AC8', fontSize:11, fontWeight:600 }}>
                                     {Ico.building(10)} {fmtUnit(r.sector)}
                                   </span>
                                 : <span style={{ color:'#C8D0E0', fontSize:12 }}>—</span>
@@ -1239,9 +1237,9 @@ export default function PublicRankTellerPage() {
                             </td>
                             {/* Department */}
                             <td style={{ padding: '12px 12px' }}>
-                              <div style={{ display:'flex', alignItems:'center', gap:4, maxWidth:180 }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                                 <span style={{ color:'#b71113', opacity:.45, flexShrink:0, display:'flex' }}>{Ico.mappin(11)}</span>
-                                <span style={{ fontSize:12, color:'#3A5070', fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{fmtUnit(r.department) || '—'}</span>
+                                <span style={{ fontSize:12, color:'#3A5070', fontWeight:500 }}>{fmtUnit(r.department) || '—'}</span>
                               </div>
                             </td>
                             {/* Score + bar */}
@@ -1443,7 +1441,7 @@ export default function PublicRankTellerPage() {
                       {/* Sector (now 3rd column) */}
                       <td style={{ padding: '12px 16px' }}>
                         {r.sector
-                          ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 8, background: '#F0F4FF', color: '#4A6AC8', fontSize: 12, fontWeight: 600, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 8, background: '#F0F4FF', color: '#4A6AC8', fontSize: 12, fontWeight: 600 }}>
                               {Ico.building(11)} {fmtUnit(r.sector)}
                             </span>
                           : <span style={{ color: '#C8D0E0', fontSize: 12 }}>—</span>
@@ -1452,9 +1450,9 @@ export default function PublicRankTellerPage() {
 
                       {/* Department (now 4th column) */}
                       <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, maxWidth: 180 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                           <span style={{ color: '#b71113', opacity: .5, flexShrink: 0, display: 'flex' }}>{Ico.mappin(12)}</span>
-                          <span style={{ fontSize: 12, color: '#3A5070', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtUnit(r.department) || '—'}</span>
+                          <span style={{ fontSize: 12, color: '#3A5070', fontWeight: 500 }}>{fmtUnit(r.department) || '—'}</span>
                         </div>
                       </td>
 

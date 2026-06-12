@@ -120,6 +120,7 @@ interface RankRow {
   sector: string
   department: string
   day_of_work: number
+  weight_txn: number
   txn_count: number
   txn_score: number
   pro_score: number
@@ -166,6 +167,7 @@ function parseSheetRows(ws: XLSX.WorkSheet, search: string): RankRow[] {
       sector:              str(g(C.sector)),
       department:          str(g(C.department)),
       day_of_work:         num(g(C.day_of_work)),
+      weight_txn:         num(g(C.weight_txn)),
       txn_count:           num(g(C.txn_per_day)),
       txn_score:           num(g(C.avg_score_total)),
       pro_score:           num(g(C.total_score)),
