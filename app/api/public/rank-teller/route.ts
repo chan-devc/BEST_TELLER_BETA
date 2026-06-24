@@ -207,7 +207,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Unique issue_dates (no duplicates — same period may have v1/v2)
-  const issueDates = [...new Set(files.map(f => f.issueDate))]
+  const issueDates = Array.from(new Set(files.map(f => f.issueDate)))
 
   // Pick the requested period, or fall back to most recent
   const activePeriod = (issueDateRaw && issueDates.includes(issueDateRaw))

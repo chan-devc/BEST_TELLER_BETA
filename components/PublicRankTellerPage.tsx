@@ -101,6 +101,7 @@ interface RankRow {
   sector: string
   department: string
   day_of_work: number
+  weight_txn: number | string
   txn_count: number | string
   txn_score: number | string
   pro_score: number | string
@@ -335,7 +336,7 @@ function ScoreModal({ row, onClose }: {
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.5px', color: '#838380', marginBottom: 8, fontFamily: 'var(--font-lao)' }}>ຂໍ້ມູນທຸລະກໍາ</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              {statCard('ລວມທຸລະກໍາ',    fmt(Number(row.txn_score)),      '#6366F1')}
+              {statCard('ລວມຄະແນນທຸລະກໍາ',    fmt(Number(row.txn_score)),      '#6366F1')}
               {statCard('ສະເລ່ຍທຸລະກໍາ/ມື້',  fmt(Number(row.txn_count)),      '#0EA5E9', `${row.day_of_work} ມື້`)}
             </div>
           </div>
@@ -606,7 +607,7 @@ export default function PublicRankTellerPage() {
     <div style={{ minHeight: '100vh', background: '#F4F6FC', fontFamily: "'Noto Sans Lao','Vidaloka',serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
       <div style={{ animation: 'float 3s ease-in-out infinite', color: '#b71113' }}>{Ico.trophy(80)}</div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 28, fontWeight: 900, color: '#1A2340', marginBottom: 10 }}>BCEL ລາງວັນ Teller ດີເດັ່ນ 2026</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#1A2340', marginBottom: 10 }}>ທະນາຄານການຄ້າຕ່າງປະເທດລາວ ມະຫາຊົນ ລາງວັນ Teller ດີເດັ່ນ 2026</div>
         <div style={{ fontSize: 16, fontWeight: 700, color: '#6878A0', marginBottom: 6, fontFamily: 'Noto Sans Lao, sans-serif' }}>
           ⏳ ຍັງບໍ່ໄດ້ປະກາດຜົນ
         </div>
@@ -750,7 +751,7 @@ export default function PublicRankTellerPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {([
                   { icon: Ico.building(14), text: `${!isRankView && activeDept ? 1 : (activeRank?.dept_count ?? '—')} ພາກສ່ວນ` },
-                  { icon: Ico.sparkle(14),  text: `ທຸລະກໍາ / ມື້ ສະເລ່ຍ ${cPerDay}` },
+                  { icon: Ico.sparkle(14),  text: `ທຸລະກໍາ/ມື້ສະເລ່ຍ ${cPerDay}` },
                 ] as const).map((c, i) => (
                   <div key={i} style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(235,20,20,.45)', border: '1.5px solid rgba(255,255,255,.18)', backdropFilter: 'blur(8px)', boxShadow: '0 2px 6px rgba(0,0,0,.15)', display: 'flex', alignItems: 'center', gap: 8, minWidth: 120, height: 51 }}>
                     <span style={{ display: 'flex', flexShrink: 0, background: 'rgba(255,255,255,.9)', borderRadius: 6, padding: 4, color: '#b71113' }}>{c.icon}</span>
@@ -821,6 +822,7 @@ export default function PublicRankTellerPage() {
         <button
           className={`cat-tab${activeView === 'by_dept' ? ' on' : ''}`}
           aria-pressed={activeView === 'by_dept'}
+          style={activeView === 'by_dept' ? { background: 'linear-gradient(135deg,#b71113,#8a0c0d)', border: 'none', borderRadius: 6, color: '#fff' } : undefined}
           onClick={() => {
             if (activeView === 'by_dept') return
             byDeptInitRef.current = false
@@ -935,16 +937,19 @@ export default function PublicRankTellerPage() {
         {/* ── Podium ── */}
         {top3.length > 0 && (
           <div style={{ marginBottom: 48 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
-              <div style={{ width: 4, height: 22, background: 'var(--red)', borderRadius: 2 }} />
-              <span style={{ fontSize: 20, fontWeight: 900, color: '#0A1628', fontFamily: 'var(--font-lao)' }}>5 ອັນດັບທໍາອິດ</span>
-              {activeLabel && <span style={{ fontSize: 13, color: '#8A9BB8', fontWeight: 600 }}>{activeLabel}</span>}
+            {/* ── Reward banner ── */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, padding: '10px 16px', background: 'linear-gradient(135deg,rgba(255,215,0,.43),rgba(255,140,0,.31))', borderRadius: 14, border: '1px solid rgba(212,160,23,.90)' }}>
+              <span style={{ color: '#D4A017', display: 'flex', flexShrink: 0 }}>{Ico.trophy(18)}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#1A2340', fontFamily: 'var(--font-lao)' }}>ການກໍານົດເງື່ອນໄຂໃຫ້ຄະແນນ</div>
+                <div style={{ fontSize: 14, color: '#A07000', fontWeight: 600, marginTop: 1, fontFamily: 'var(--font-lao)' }}>ຜູ້ທີ່ໄດ້ຮັບລາງວັນ (ຄະແນນຫຼາຍກວ່າ 100) · {top3.length} ຄົນ</div>
+              </div>
               <button
                 onClick={() => setShowFormula(true)}
                 title="ສູດຄຳນວນຄະແນນ"
-                style={{ marginLeft: 4, display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:16, border:'1.5px solid rgba(183,17,19,.22)', background:'rgba(183,17,19,.06)', color:'#b71113', fontSize:12, fontWeight:700, cursor:'pointer', transition:'.15s', flexShrink:0 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(183,17,19,.14)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(183,17,19,.06)' }}
+                style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:16, border:'1.5px solid rgba(212,160,23,.5)', background:'rgba(255,255,255,.4)', color:'#7A5800', fontSize:12, fontWeight:700, cursor:'pointer', transition:'.15s', flexShrink:0 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(255,255,255,.65)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(255,255,255,.4)' }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 ລາຍລະອຽດ
@@ -1081,11 +1086,11 @@ export default function PublicRankTellerPage() {
               {/* ── Top 3 Reward Podium (score ≥ 100 only) ── */}
               {dTop3.length > 0 ? (
                 <div style={{ marginBottom: 28 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, padding: '10px 16px', background: 'linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,140,0,.08))', borderRadius: 14, border: '1px solid rgba(212,160,23,.25)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, padding: '10px 16px', background: 'linear-gradient(135deg,rgba(255,215,0,.43),rgba(255,140,0,.31))', borderRadius: 14, border: '1px solid rgba(212,160,23,.90)' }}>
                     <span style={{ color: '#D4A017', display: 'flex', animation: 'glow 2.5s ease-in-out infinite' }}>{Ico.trophy(20)}</span>
                     <div>
                       <div style={{ fontSize: 16, fontWeight: 900, color: '#1A2340' }}>ລາງວັນດີເດັ່ນ · {deptLabel}</div>
-                      <div style={{ fontSize: 12, color: '#A07000', fontWeight: 600, marginTop: 1 }}>ຜູ້ທີ່ໄດ້ຮັບລາງວັນ (ຄະແນນ ≥ 100) · {rewardRows.length} ຄົນ</div>
+                      <div style={{ fontSize: 12, color: '#A07000', fontWeight: 600, marginTop: 1 }}>ຜູ້ທີ່ໄດ້ຮັບລາງວັນ (ຄະແນນຫຼາຍກວ່າ 100) · {rewardRows.length} ຄົນ</div>
                     </div>
                   </div>
                   {/* Same podium style as main rank view */}
@@ -1142,7 +1147,7 @@ export default function PublicRankTellerPage() {
                 </div>
               ) : (
                 <div style={{ marginBottom: 24, padding: '20px', borderRadius: 16, background: '#F7F8FC', border: '1px solid #E8EBF5', textAlign: 'center', color: '#8A9BB8', fontSize: 13, fontWeight: 600 }}>
-                  ຍັງບໍ່ມີຜູ້ທີ່ໄດ້ຮັບລາງວັນ (ຄະແນນ ≥ 100) ໃນສ່ວນນີ້
+                  ຍັງບໍ່ມີຜູ້ທີ່ໄດ້ຮັບລາງວັນ (ຄະແນນຫຼາຍກວ່າ 100) ໃນສ່ວນນີ້
                 </div>
               )}
 
@@ -1173,7 +1178,7 @@ export default function PublicRankTellerPage() {
                           { h: 'ຂະແໜງ / ໜ່ວຍ',  align: 'left'   },
                           { h: 'ສາຂາ / ພະແນກ',  align: 'left'   },
                           { h: 'ລວມ',            align: 'right'  },
-                          { h: '',               align: 'center' },
+                          { h: 'ໝາຍເຫດ',         align: 'center' },
                         ].map((c, i) => (
                           <th key={i} style={{ padding: '12px 12px', textAlign: c.align as React.CSSProperties['textAlign'], fontSize: 12, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', color: 'rgb(255, 255, 255)', whiteSpace: 'nowrap', background: '#b71113', borderBottom: '3px solid #8a0c0d' }}>{c.h}</th>
                         ))}
@@ -1252,7 +1257,7 @@ export default function PublicRankTellerPage() {
                               </div>
                             </td>
                             {/* Detail */}
-                            <td style={{ padding:'12px 12px', textAlign:'center', width:80 }}>
+                            <td style={{ padding:'12px 12px', textAlign:'center', width:120 }}>
                               <button onClick={() => setModalRow(r)}
                                 style={{ padding:'5px 12px', borderRadius:9, border:'1.5px solid #E2E8F0', background:'#F7F9FF', color:'#4A5578', fontSize:11, fontWeight:700, cursor:'pointer', transition:'.15s' }}
                                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#b71113'; (e.currentTarget as HTMLButtonElement).style.color='#b71113' }}
@@ -1358,10 +1363,10 @@ export default function PublicRankTellerPage() {
                     { label: 'ຂະແໜງ/ໜ່ວຍບໍລິການ', align: 'left'   },
                     { label: 'ສູນ/ພະແນກ/ສາຂາ',   align: 'left'   },
                     { label: 'ຄະແນນລວມ',        align: 'right'  },
-                    { label: 'ໝາຍເຫດ',          align: 'center' },
-                  ].map((c, i) => (
+                    { label: 'ໝາຍເຫດ',          align: 'center', width: 100 },
+                  ].map((c: { label: string; align: string; width?: number }, i) => (
                     <th key={i} style={{
-                      padding: '13px 16px',
+                      padding: '13px 16px', ...(c.width ? { width: c.width } : {}),
                       textAlign: c.align as React.CSSProperties['textAlign'],
                       fontSize: 12, fontWeight: 700,
                       letterSpacing: '1.5px', textTransform: 'uppercase',
@@ -1467,7 +1472,7 @@ export default function PublicRankTellerPage() {
                       </td>
 
                       {/* Detail button */}
-                      <td style={{ padding: '12px 16px', textAlign: 'center', width: 90 }}>
+                      <td style={{ padding: '12px 16px', textAlign: 'center', width: 120 }}>
                         <button
                           onClick={() => setModalRow(r)}
                           style={{ padding: '6px 14px', borderRadius: 10, border: '1.5px solid #E2E8F0', background: '#F7F9FF', color: '#4A5578', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: '.15s' }}
@@ -1523,7 +1528,7 @@ export default function PublicRankTellerPage() {
       <footer>
         <div>
           <div className="f-brand">BCEL — <em>ລາງວັນ Teller ດີເດັ່ນ 2026</em></div>
-          <div className="f-sub">ທະນາຄານພາຍນອກລາວ (ມະຫາຊົນ) · BANQUE POUR LE COMMERCE EXTÉRIEUR LAO PUBLIC</div>
+          <div className="f-sub">ທະນາຄານການຄ້າຕ່າງປະເທດລາວ ມະຫາຊົນ· BANQUE POUR LE COMMERCE EXTÉRIEUR LAO PUBLIC</div>
         </div>
         <div className="f-links">
           <a href="https://www.bcel.com.la" target="_blank" rel="noreferrer" className="f-link">🌐 bcel.com.la</a>

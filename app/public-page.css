@@ -192,7 +192,7 @@
   background: none; outline: none; font-family: var(--font-lao);
 }
 .pub-page .cat-tab:hover { color: var(--red); }
-.pub-page .cat-tab.on   { color: var(--red); border-bottom-color: transparent; font-weight: 700; background: rgba(183,17,19,.08); border-radius: 6px 6px 0 0; }
+.pub-page .cat-tab.on   { color: #fff; border-bottom-color: transparent; font-weight: 700; background: linear-gradient(135deg,#b71113,#8a0c0d); border-radius: 6px; box-shadow: 0 2px 8px rgba(183,17,19,.3); }
 .pub-page .cat-badge    { background: rgba(183,17,19,.08); color: var(--red); border-radius: 99px; padding: 2px 8px; font-size: 12px; font-weight: 700; font-family: var(--font-latin); }
 .pub-page .cat-tab.on .cat-badge { background: var(--red); color: #fff; }
 
