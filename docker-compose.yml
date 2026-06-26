@@ -1,15 +1,24 @@
 services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"          # expose Nginx on 3031, not Next.js directly
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+    restart: unless-stopped
+
   web:
     build: .
-    ports:
-      - "3031:3000"
+    # ports no longer exposed to host — only Nginx talks to it
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET}
       - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME}
     volumes:
-      # Mount data directory so XLSX files and finger_codes.json
-      # can be updated without rebuilding the image
       - ./file:/app/file
     extra_hosts:
       - "host.docker.internal:host-gateway"
